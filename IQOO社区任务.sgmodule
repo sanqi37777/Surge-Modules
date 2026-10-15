@@ -1,12 +1,12 @@
-#!name=IQOO社区每日任务
-#!desc=IQOO社区签到、浏览任务，可设置每日运行时间、Token捕获、发帖、抽奖和浏览数量
-#!arguments=schedule:"0 9 * * *",token_host:bbs-api.iqoo.com,thread:false,draw:false,browse_count:15
-#!arguments-desc=schedule：Cron表达式（默认每天09:00）；token_host：Token捕获域名，设为token-disabled.invalid可尝试关闭捕获；thread：是否发帖；draw：是否抽奖；browse_count：浏览文章数量（1-26）
+#!name=🐻 IQOO社区【签到】
+#!desc=IQOO社区每日任务，可自定义执行时间及任务开关
+#!arguments=定时签到:0 9 * * *,禁用获取Cookie:否,禁用MITM:否,发帖任务:false,抽奖任务:false,浏览文章数量:15
+#!arguments-desc=定时签到：Cron表达式，默认每天早上09:00执行。\n禁用获取Cookie：选择“是”关闭捕获，选择“否”开启。\n禁用MITM：选择“是”时请同时在主配置中移除 bbs-api.iqoo.com；选择“否”则保留。\n发帖任务：true开启，false关闭。\n抽奖任务：true开启，false关闭。\n浏览文章数量：1-26。
 
 [Script]
-IQOO获取Token = type=http-response, pattern=^https://{{{token_host}}}/api/v3/user\?userId=, requires-body=true, timeout=30, script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/iqoo-surge.js
+IQOO获取Token = type=http-response, pattern=^https:\/\/bbs-api\.iqoo\.com\/api\/v3\/user\?userId=, requires-body=true, timeout=30, script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/iqoo-surge.js
 
-IQOO每日任务 = type=cron, cronexp="{{{schedule}}}", timeout=360, script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/iqoo-surge.js, argument="thread={{{thread}}}&draw={{{draw}}}&browse_count={{{browse_count}}}"
+IQOO每日任务 = type=cron, cronexp="{{{定时签到}}}", timeout=360, script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/iqoo-surge.js, argument="thread={{{发帖任务}}}&draw={{{抽奖任务}}}&browse_count={{{浏览文章数量}}}"
 
 [MITM]
 hostname = %APPEND% bbs-api.iqoo.com
