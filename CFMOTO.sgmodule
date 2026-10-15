@@ -1,0 +1,21 @@
+#!name=春风摩托每日任务
+#!desc=春风摩托签到及会员任务，可修改执行时间和Cookie捕获
+#!arguments=schedule:"0 7 * * *",token_host:c[.]cfmoto[.]com
+#!arguments-desc=schedule：每日任务Cron表达式；token_host：Cookie捕获域名匹配规则，改为token-disabled[.]invalid可尝试关闭捕获
+
+[Script]
+# Cookie 捕获
+春风摩托Cookie = type=http-response, pattern=^https:\/\/{{{token_host}}}\/jv\/user\/user_info, requires-body=true, timeout=60, script-path=https://raw.githubusercontent.com/leiyiyan/resource/main/script/cfmoto/cfmoto.js
+
+# 每日任务
+春风摩托任务 = type=cron, cronexp="{{{schedule}}}", timeout=360, script-path=https://raw.githubusercontent.com/leiyiyan/resource/main/script/cfmoto/cfmoto.js
+
+[URL Rewrite]
+# 开屏广告
+^https:\/\/c\.cfmoto\.com\/cfmotoservermall\/app\/ad$ reject-dict
+
+# 弹窗广告
+^https:\/\/c\.cfmoto\.com\/cfmotoservermall\/app\/popwindow reject-dict
+
+[MITM]
+hostname = %APPEND% c.cfmoto.com
