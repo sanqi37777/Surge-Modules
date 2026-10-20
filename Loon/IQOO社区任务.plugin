@@ -1,0 +1,22 @@
+#!name=🐻 IQOO社区
+#!desc=IQOO社区每日任务（由 Surge 模块转换的 Loon 版），可自定义执行时间及任务开关
+#!author=sanqi37777
+#!homepage=https://github.com/sanqi37777/Surge-Modules
+#!tag=签到,任务
+#!date=2026-10-20
+
+[Argument]
+cron_expr = input, "0 9 * * *", type=string, tag=定时签到, desc=Cron 表达式，默认每天 09:00 执行
+thread = select, "false", "true", type=string, tag=发帖任务, desc=选 true 开启发帖任务
+draw = select, "false", "true", type=string, tag=抽奖任务, desc=选 true 开启抽奖任务
+browse_count = input, 15, type=number, tag=浏览文章数量, desc=范围 1-26
+
+[Script]
+# 获取 Token（打开 IQOO 社区 App 时自动捕获）
+http-response ^https:\/\/bbs-api\.iqoo\.com\/api\/v3\/user\?userId= script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/iqoo-surge.js, requires-body=true, timeout=30, tag=IQOO获取Token
+
+# 每日任务
+cron "{cron_expr}" script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/iqoo-surge.js, timeout=360, tag=IQOO每日任务, argument="thread={thread}&draw={draw}&browse_count={browse_count}"
+
+[MITM]
+hostname = bbs-api.iqoo.com
