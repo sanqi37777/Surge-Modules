@@ -1,0 +1,10 @@
+#!name=Rokid每日任务
+#!desc=Rokid每日签到、积分任务及积分查询
+#!arguments=accounts:账号1&密码1 账号2&密码2
+#!arguments-desc=填写账号密码，格式为账号&密码；多个账号之间用空格分隔
+
+[Script]
+Rokid每日任务 = type=cron, cronexp=“34 8,17 * * *”, timeout=360, script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/Rokid.js, argument=“Rokid={{{accounts}}}”
+
+[MITM]
+hostname = %APPEND% account-center.rokid.com, forum-ugc-api.rokid.com

@@ -13,10 +13,10 @@ browse_count = input, 15, type=number, tag=浏览文章数量, desc=范围 1-26
 
 [Script]
 # 获取 Token（打开 IQOO 社区 App 时自动捕获）
-http-response ^https:\/\/bbs-api\.iqoo\.com\/api\/v3\/user\?userId= script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/iqoo-surge.js, requires-body=true, timeout=30, tag=IQOO获取Token
+http-response ^https:\/\/bbs-api\.iqoo\.com\/api\/v3\/user\?userId= script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/iqoo-surge.js, requires-body=true, timeout=30, tag=IQOO获取Token
 
 # 每日任务
-cron "{cron_expr}" script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/iqoo-surge.js, timeout=360, tag=IQOO每日任务, argument="thread={thread}&draw={draw}&browse_count={browse_count}"
+cron "{cron_expr}" script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/iqoo-surge.js, timeout=360, tag=IQOO每日任务, argument="thread={thread}&draw={draw}&browse_count={browse_count}"
 
 [MITM]
 hostname = bbs-api.iqoo.com

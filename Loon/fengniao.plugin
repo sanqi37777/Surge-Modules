@@ -7,10 +7,10 @@
 
 [Script]
 # 捕获：App 每次发原生 pizza 请求时，把登录态头存到本地（不改请求本身）
-http-request ^https://httpizza\.ele\.me/lpd_knight\. script-path=https://cdn.jsdelivr.net/gh/sanqi37777/Surge-Modules@main/eleme_pizza_probe.js, requires-body=false, tag=pizza登录态捕获
+http-request ^https://httpizza\.ele\.me/lpd_knight\. script-path=https://cdn.jsdelivr.net/gh/sanqi37777/Surge-Modules@main/Scripts/eleme_pizza_probe.js, requires-body=false, tag=pizza登录态捕获
 
 # 探针：定时表达式设在 2 月 29 日，正常不会自动触发；在 Loon「脚本」列表里手动运行一次即可
-cron "0 0 29 2 *" script-path=https://cdn.jsdelivr.net/gh/sanqi37777/Surge-Modules@main/eleme_pizza_probe.js, timeout=60, tag=pizza重放探针
+cron "0 0 29 2 *" script-path=https://cdn.jsdelivr.net/gh/sanqi37777/Surge-Modules@main/Scripts/eleme_pizza_probe.js, timeout=60, tag=pizza重放探针
 
 [MITM]
 hostname = httpizza.ele.me
