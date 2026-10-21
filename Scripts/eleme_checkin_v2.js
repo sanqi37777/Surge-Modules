@@ -53,8 +53,14 @@ function runCapture() {
     }
   });
   if (saved["Cookie"] || saved["X-TOKEN"]) {
-    $persistentStore.write(JSON.stringify(saved), STORE_KEY);
+    var newVal = JSON.stringify(saved);
+    var oldVal = $persistentStore.read(STORE_KEY);
+    $persistentStore.write(newVal, STORE_KEY);
     console.log("[蜂鸟签到] 登录态头已刷新");
+    // 只在登录态首次保存或发生变化时通知一次，避免每次打开 App 都弹
+    if (oldVal !== newVal) {
+      notify("获取登录态成功 ✅", "蜂鸟众包登录态已保存，09:00 自动签到将使用最新登录态。");
+    }
   }
   $done({});
 }
