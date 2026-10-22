@@ -1,0 +1,63 @@
+#!name=彩云天气
+#!desc=彩云天气去广告 + 解锁SVIP，转换自 wf021325 的 Quantumult X 脚本，脚本仍指向原作者地址、上游更新自动生效。注意：大于 7.20.2 的版本不可以 MITM 解锁，需使用最新版（如 7.22.0），可通过登录旧版解锁后在线升级到新版；广告无法消除时可卸载重装，或清除 App 数据后重新登录。
+#!author=wf021325（原作）
+#!category=去广告
+
+[Rule]
+# 上传信息
+DOMAIN,gather.colorfulclouds.net,REJECT
+
+[URL Rewrite]
+# 普通版开屏广告（此广告不定时出现）
+^https:\/\/ad\.cyapi\.cn\/v2\/req\?app_name=weather reject-dict
+
+# 7.1.9 限时福利Svip
+^https:\/\/biz\.cyapi\.cn\/p\/v1\/trial_card\/info reject-dict
+
+# 7.2.0普通版修改VIP后提示账号迁移
+^https:\/\/biz\.cyapi\.cn\/api\/v1\/token\/device$ reject-dict
+
+# 亲友卡
+^https:\/\/biz\.cyapi\.cn\/p\/v1\/entries reject-dict
+
+# 左上角+进去推荐
+^https:\/\/starplucker\.cyapi\.cn\/v3\/config$ reject-dict
+
+# 通知
+^https:\/\/starplucker\.cyapi\.cn\/v3\/notification\/message_center reject-dict
+
+# 会员限时弹窗
+^https:\/\/starplucker\.cyapi\.cn\/v3\/config\/cypage\/home\/conditions\/local$ reject-dict
+^https:\/\/starplucker\.cyapi\.cn\/v3\/config\/cypage\/home_activity\/conditions$ reject-dict
+^https:\/\/starplucker\.cyapi\.cn\/v3\/config\/cypage\/40day\/conditions\/local$ reject-dict
+
+[Script]
+# 赏叶赏花模块
+彩云天气-活动 = type=http-response, pattern=^https:\/\/wrapper\.cyapi\.cn\/v1\/activity\?app_name=weather, requires-body=true, timeout=60, script-path=https://raw.githubusercontent.com/wf021325/qx/master/js/caiyun.js
+
+# 解锁旧版vip（7.20.0之前）
+彩云天气-旧版VIP = type=http-response, pattern=^https:\/\/biz\.cyapi\.cn\/v2\/user, requires-body=true, timeout=60, script-path=https://raw.githubusercontent.com/wf021325/qx/master/js/caiyun.js
+
+# 卫星云图 48小时预报
+彩云天气-卫星云图 = type=http-request, pattern=^https:\/\/wrapper\.cyapi\.cn\/v1\/(satellite|nafp\/origin_images), timeout=60, script-path=https://raw.githubusercontent.com/wf021325/qx/master/js/caiyun.js
+
+# 7.20.0版本显示VIP
+彩云天气-VIP详情 = type=http-response, pattern=^https?:\/\/biz\.cyapi\.cn\/api\/v1\/user_detail$, requires-body=true, timeout=60, script-path=https://raw.githubusercontent.com/wf021325/qx/master/js/caiyun.js
+
+# 7.22.0版本 40天趋势/60天潮汐/风 等有时候无法加载（原 script-request-body，注入 Authorization）
+彩云天气-星图请求 = type=http-request, pattern=^https:\/\/starplucker\.cyapi\.cn\/v3\/, requires-body=true, timeout=60, script-path=https://raw.githubusercontent.com/wf021325/qx/master/js/caiyun.js
+
+# 发现-轮播
+彩云天气-轮播 = type=http-response, pattern=^https:\/\/starplucker\.cyapi\.cn\/v3\/operation\/banners\?user_type=, requires-body=true, timeout=60, script-path=https://raw.githubusercontent.com/wf021325/qx/master/js/caiyun.js
+
+# 发现-宫格
+彩云天气-宫格 = type=http-response, pattern=^https:\/\/starplucker\.cyapi\.cn\/v3\/operation\/features\?user_type=, requires-body=true, timeout=60, script-path=https://raw.githubusercontent.com/wf021325/qx/master/js/caiyun.js
+
+# 发现-官方活动
+彩云天气-官方活动 = type=http-response, pattern=^https:\/\/starplucker\.cyapi\.cn\/v3\/campaigns$, requires-body=true, timeout=60, script-path=https://raw.githubusercontent.com/wf021325/qx/master/js/caiyun.js
+
+# 发现-瀑布流
+彩云天气-瀑布流 = type=http-response, pattern=^https:\/\/starplucker\.cyapi\.cn\/v3\/operation\/feeds, requires-body=true, timeout=60, script-path=https://raw.githubusercontent.com/wf021325/qx/master/js/caiyun.js
+
+[MITM]
+hostname = %APPEND% *.cyapi.cn
