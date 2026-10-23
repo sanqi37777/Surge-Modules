@@ -18,6 +18,7 @@
 | IQOO社区 | https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Surge/IQOO%E7%A4%BE%E5%8C%BA%E4%BB%BB%E5%8A%A1.sgmodule |
 | Rokid | https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Surge/Rokid.sgmodule |
 | 彩云天气 | https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Surge/caiyun.sgmodule |
+| 网盘追剧直连 | https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Surge/PanVod.sgmodule |
 | 蜂鸟探针 | https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Surge/fengniao.sgmodule |
 
 ## Loon 插件安装链接

@@ -1,0 +1,10 @@
+#!name=网盘追剧 & 玩偶资源站直连
+#!desc=国内主流追剧网盘（115/阿里夸克UC/百度/天翼/迅雷/123/移动云盘/光鸭）与玩偶系资源站域名强制直连；规则源自 eulac-dev/Proxy，上游更新自动生效；模块规则位于主配置规则之前
+#!author=eulac-dev
+#!homepage=https://github.com/eulac-dev/Proxy
+
+[Rule]
+# 追剧网盘 PanVod（47 条，2026-08-14 版）
+RULE-SET,https://raw.githubusercontent.com/eulac-dev/Proxy/refs/heads/main/Loon/Rules/PanVod.lsr,DIRECT
+# 玩偶系资源站 ResourceSite（22 条，2026-09-30 版）
+RULE-SET,https://raw.githubusercontent.com/eulac-dev/Proxy/refs/heads/main/Loon/Rules/ResourceSite.lsr,DIRECT
