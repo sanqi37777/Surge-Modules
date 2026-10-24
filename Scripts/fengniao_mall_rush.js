@@ -40,10 +40,10 @@
  *    绝不进聊天、绝不进仓库、通知里不打印明文
  *  - 手机号预存（2026-10-24 补）：非抢购时段商品页按钮是灰的、点不了，
  *    getAlipayAccount 根本不会发，捕获规则触发不了——不要指望场外点兑换来捕获。
- *    改走本机配置：在自己 Surge 配置的 [Script] 里另加一行 generic 指向本脚本、
+ *    首选模块参数：模块声明 #!arguments=mobile，点进模块填一次即可（值只存本机
+ *    模块实例）；退路是在自己 Surge 配置的 [Script] 里另加一行 generic 指向本脚本、
  *    argument 填手机号，手动跑一次即存入本机（见 runRush 开头的 $argument 处理）。
- *    argument 绝不能写进仓库模块（公开），只写在他自己本机配置里；存好后该行可删，
- *    值已在 $persistentStore 里。
+ *    手机号绝不能写进仓库模块正文。
  */
 
 // ---------- 本机预存键（值只在手机上，仓库文件不含任何真实值） ----------
@@ -196,13 +196,14 @@ function pollStock(base, triesLeft) {
 
 // ---------------- 定时抢购模式 ----------------
 function runRush() {
-  // 本机预存手机号（一次性 setup）：在自己 Surge 配置 [Script] 里另加一行
-  // generic 指向本脚本、argument 填手机号，手动跑一次即存入本机。
-  // argument 绝不能写进仓库模块，只写在他自己本机配置里。
+  // 本机预存手机号（一次性 setup）：模块参数 mobile（见模块 #!arguments），
+  // 或在自己 Surge 配置 [Script] 里另加一行 generic 指向本脚本、argument 填手机号，
+  // 手动跑一次即存入本机。argument 绝不能写进仓库模块正文，只存在模块参数/
+  // 本机配置里。仅在值变化时通知，避免每次 cron 都弹。
   try {
     var arg = (typeof $argument !== "undefined" && $argument) ? String($argument) : "";
     var digits = arg.replace(/\D/g, "");
-    if (digits.length === 11 && digits.charAt(0) === "1") {
+    if (digits.length === 11 && digits.charAt(0) === "1" && digits !== $persistentStore.read(KEY_MOBILE)) {
       $persistentStore.write(digits, KEY_MOBILE);
       notify("手机号已预存 ✅", "已存到本机（" + maskMobile(digits) + "），之后场次自动跑。");
     }
