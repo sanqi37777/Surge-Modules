@@ -225,12 +225,21 @@ function runRush() {
   // 或在自己 Surge 配置 [Script] 里另加一行 generic 指向本脚本、argument 填手机号，
   // 手动跑一次即存入本机。argument 绝不能写进仓库模块正文，只存在模块参数/
   // 本机配置里。仅在值变化时通知，避免每次 cron 都弹。
+  // 注意：填参数本身不等于存好——必须从脚本列表跑一次带 argument 的 generic 脚本，
+  // 编辑器里裸跑是没有 $argument 的，读不到参数。
   try {
     var arg = (typeof $argument !== "undefined" && $argument) ? String($argument) : "";
-    var digits = arg.replace(/\D/g, "");
-    if (digits.length === 11 && digits.charAt(0) === "1" && digits !== $persistentStore.read(KEY_MOBILE)) {
-      $persistentStore.write(digits, KEY_MOBILE);
-      notify("手机号已预存 ✅", "已存到本机（" + maskMobile(digits) + "），之后场次自动跑。");
+    if (arg && arg.indexOf("refresh") < 0) {
+      var digits = arg.replace(/\D/g, "");
+      if (digits.length === 13 && digits.indexOf("86") === 0) digits = digits.slice(2);
+      if (digits.length === 11 && digits.charAt(0) === "1") {
+        if (digits !== $persistentStore.read(KEY_MOBILE)) {
+          $persistentStore.write(digits, KEY_MOBILE);
+          notify("手机号已预存 ✅", "已存到本机（" + maskMobile(digits) + "），之后场次自动跑。");
+        }
+      } else {
+        notify("手机号参数格式不对", "模块参数 mobile 里请填 11 位手机号（不要带 +86），填好后重新跑一次预存脚本。");
+      }
     }
   } catch (e) {}
   // 预刷新模式（整点前 1 分钟 cron，argument=refresh）：只刷新 open_id，不抢购；
