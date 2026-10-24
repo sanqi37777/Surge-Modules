@@ -38,6 +38,12 @@
  *  - 当月成功即停：抢中一次后写当月成功标记，同月再跑直接通知退出
  *  - 手机号 / open_id / alipayOpenID / pizza 登录态只存手机本地 $persistentStore，
  *    绝不进聊天、绝不进仓库、通知里不打印明文
+ *  - 手机号预存（2026-10-24 补）：非抢购时段商品页按钮是灰的、点不了，
+ *    getAlipayAccount 根本不会发，捕获规则触发不了——不要指望场外点兑换来捕获。
+ *    改走本机配置：在自己 Surge 配置的 [Script] 里另加一行 generic 指向本脚本、
+ *    argument 填手机号，手动跑一次即存入本机（见 runRush 开头的 $argument 处理）。
+ *    argument 绝不能写进仓库模块（公开），只写在他自己本机配置里；存好后该行可删，
+ *    值已在 $persistentStore 里。
  */
 
 // ---------- 本机预存键（值只在手机上，仓库文件不含任何真实值） ----------
@@ -190,6 +196,17 @@ function pollStock(base, triesLeft) {
 
 // ---------------- 定时抢购模式 ----------------
 function runRush() {
+  // 本机预存手机号（一次性 setup）：在自己 Surge 配置 [Script] 里另加一行
+  // generic 指向本脚本、argument 填手机号，手动跑一次即存入本机。
+  // argument 绝不能写进仓库模块，只写在他自己本机配置里。
+  try {
+    var arg = (typeof $argument !== "undefined" && $argument) ? String($argument) : "";
+    var digits = arg.replace(/\D/g, "");
+    if (digits.length === 11 && digits.charAt(0) === "1") {
+      $persistentStore.write(digits, KEY_MOBILE);
+      notify("手机号已预存 ✅", "已存到本机（" + maskMobile(digits) + "），之后场次自动跑。");
+    }
+  } catch (e) {}
   // 当月已抢中 → 直接停，不重复下单
   if ($persistentStore.read(KEY_SUCCESS_MONTH) === currentMonth()) {
     notify("本月已抢到", "当月已成功抢到一次，按每月限抢 1 次规则不再下单。");
