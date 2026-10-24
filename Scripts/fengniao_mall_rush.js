@@ -48,6 +48,7 @@
 
 // ---------- 本机预存键（值只在手机上，仓库文件不含任何真实值） ----------
 var KEY_OPEN_ID = "fengniao_mall_open_id_v1";      // goldmall open_id（捕获或重放得到）
+var KEY_OPEN_ID_TS = "fengniao_mall_open_id_ts_v1"; // open_id 上次刷新时间戳（毫秒）
 var KEY_MOBILE = "fengniao_mall_mobile_v1";        // 支付宝手机号（捕获得到）
 var KEY_ALIPAY_ID = "fengniao_mall_alipay_id_v1";  // getAlipayAccount 选定后缓存的 alipayOpenID
 var KEY_SUCCESS_MONTH = "fengniao_mall_success_month_v1"; // 当月抢中标记 YYYY-MM
@@ -99,7 +100,10 @@ function runCapture() {
     }
   });
   var changedMobile = false;
-  if (params.open_id) $persistentStore.write(params.open_id, KEY_OPEN_ID);
+  if (params.open_id) {
+    $persistentStore.write(params.open_id, KEY_OPEN_ID);
+    $persistentStore.write(String(Date.now()), KEY_OPEN_ID_TS);
+  }
   if (params.mobile && params.mobile !== $persistentStore.read(KEY_MOBILE)) {
     $persistentStore.write(params.mobile, KEY_MOBILE);
     changedMobile = true;
@@ -181,16 +185,37 @@ function currentMonth() {
   return d.getFullYear() + "-" + (m < 10 ? "0" + m : m);
 }
 
-// 轮询库存：开场前 stock=0 + is_soldout=0 是占位，不能一次判死
+// 轮询库存：开场前 stock=0 + is_soldout=0 是占位，不能一次判死；0.5 秒一次、最多 60 次（约 30 秒）
 function pollStock(base, triesLeft) {
   return postForm("getGoodsInfo", Object.assign({}, base, { g_id: G_ID })).then(function (info) {
     console.log("[商城抢购] getGoodsInfo: " + JSON.stringify(info).slice(0, 600));
     if (info.error || !info.parsed) return info;
     var d = info.parsed.data || {};
     if (info.parsed.code === 200 && !d.is_soldout && !d.stock && triesLeft > 0) {
-      return sleep(1000).then(function () { return pollStock(base, triesLeft - 1); });
+      return sleep(500).then(function () { return pollStock(base, triesLeft - 1); });
     }
     return info;
+  });
+}
+
+// 取 open_id：5 分钟内刷新过的存量直接用（整点场次跳过重放省一次往返），
+// 否则重放 queryAuthorize，失败回落存量。整点前 1 分钟另有预刷新 cron。
+function resolveOpenId() {
+  var storedId = $persistentStore.read(KEY_OPEN_ID);
+  var storedTs = parseInt($persistentStore.read(KEY_OPEN_ID_TS) || "0", 10);
+  if (storedId && storedTs && Date.now() - storedTs < 300000) {
+    console.log("[商城抢购] 存量 open_id 5 分钟内刷新过，跳过重放");
+    return Promise.resolve(storedId);
+  }
+  return queryAuthorize().then(function (freshId) {
+    if (freshId) {
+      $persistentStore.write(freshId, KEY_OPEN_ID);
+      $persistentStore.write(String(Date.now()), KEY_OPEN_ID_TS);
+      console.log("[商城抢购] queryAuthorize 重放成功，open_id 已刷新");
+      return freshId;
+    }
+    console.log("[商城抢购] queryAuthorize 未拿到新 open_id，回落存量");
+    return storedId;
   });
 }
 
@@ -208,34 +233,41 @@ function runRush() {
       notify("手机号已预存 ✅", "已存到本机（" + maskMobile(digits) + "），之后场次自动跑。");
     }
   } catch (e) {}
+  // 预刷新模式（整点前 1 分钟 cron，argument=refresh）：只刷新 open_id，不抢购；
+  // 成功静默，失败通知一声（下场仍会现场重放，不影响抢购）。
+  if (typeof arg === "string" && arg.indexOf("refresh") >= 0) {
+    queryAuthorize().then(function (freshId) {
+      if (freshId) {
+        $persistentStore.write(freshId, KEY_OPEN_ID);
+        $persistentStore.write(String(Date.now()), KEY_OPEN_ID_TS);
+        console.log("[商城抢购] open_id 预刷新成功");
+      } else {
+        notify("open_id 预刷新失败", "下场将现场重放 queryAuthorize，不影响抢购。");
+      }
+      $done();
+    });
+    return;
+  }
   // 当月已抢中 → 直接停，不重复下单
   if ($persistentStore.read(KEY_SUCCESS_MONTH) === currentMonth()) {
     notify("本月已抢到", "当月已成功抢到一次，按每月限抢 1 次规则不再下单。");
     return $done();
   }
-  // 先重放 queryAuthorize 拿新鲜 open_id，失败回落存量
-  queryAuthorize().then(function (freshId) {
-    var openId = freshId;
-    if (openId) {
-      $persistentStore.write(openId, KEY_OPEN_ID);
-      console.log("[商城抢购] queryAuthorize 重放成功，open_id 已刷新");
-    } else {
-      openId = $persistentStore.read(KEY_OPEN_ID);
-      console.log("[商城抢购] queryAuthorize 未拿到新 open_id，回落存量");
-    }
+  // 取 open_id（5 分钟内刷新过的存量直接用，否则现场重放）
+  resolveOpenId().then(function (openId) {
     if (!openId) {
       notify("还缺 open_id", "先在 Surge 开着时从商城点进一次话费红包商品页完成授权，再等下场自动跑。");
       return $done();
     }
     var mobile = $persistentStore.read(KEY_MOBILE);
     if (!mobile) {
-      notify("还缺手机号", "装模块后进商城点一次兑换（即使售罄也会先调 getAlipayAccount），捕获规则会把手机号存到本机，下场就能自动跑。");
+      notify("还缺手机号", "请在模块参数 mobile 里填手机号并手动跑一次「蜂鸟商城手机号预存」，下场就能自动跑。");
       return $done();
     }
     var base = { open_id: openId, app_type: "h5", version: "1" };
 
-    // 1) 轮询查库存
-    pollStock(base, 30).then(function (info) {
+    // 1) 轮询查库存（0.5 秒一次、最多 60 次）
+    pollStock(base, 60).then(function (info) {
       if (info.error || !info.parsed) {
         notify("查库存失败", info.error || ("HTTP " + info.status + " " + info.raw.slice(0, 120)));
         return $done();
