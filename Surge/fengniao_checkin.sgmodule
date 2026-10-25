@@ -1,11 +1,13 @@
 #!name=蜂鸟众包自动签到（正式版）
-#!desc=每天 09:00 用 App 原生 pizza 请求的登录态头（只存手机本地）重放 clock 签到，5004「今日已签到」视为成功，再调详情接口核对今日状态；登录态首次保存或有变化时会通知一次。无签名可重放已于 2026-10-21 由探针实测通过。
+#!desc=每天 09:00 用 App 原生 pizza 请求的登录态头（只存手机本地）重放 clock 签到，5004「今日已签到」视为成功，再调详情接口核对今日状态；登录态首次保存或有变化时会通知一次。无签名可重放已于 2026-10-21 由探针实测通过。执行时间可在模块参数 checkin_time 里改（cron 表达式，默认每天 09:00）。
+#!arguments=checkin_time:0 9 * * *
+#!arguments-desc=签到执行时间，cron 表达式，如 30 8 * * * 表示每天 8:30；默认 0 9 * * * 即每天 09:00。改完更新模块即可。
 #!category=自动化
 
 [Script]
 pizza登录态捕获 = type=http-request, pattern=^https://httpizza\.ele\.me/lpd_knight\., script-path=https://cdn.jsdelivr.net/gh/sanqi37777/Surge-Modules@main/Scripts/eleme_checkin_v2.js, requires-body=false
 
-蜂鸟每日签到 = type=cron, cronexp="0 9 * * *", script-path=https://cdn.jsdelivr.net/gh/sanqi37777/Surge-Modules@main/Scripts/eleme_checkin_v2.js, timeout=60
+蜂鸟每日签到 = type=cron, cronexp="{{{checkin_time}}}", script-path=https://cdn.jsdelivr.net/gh/sanqi37777/Surge-Modules@main/Scripts/eleme_checkin_v2.js, timeout=60
 
 [MITM]
 hostname = %APPEND% httpizza.ele.me
