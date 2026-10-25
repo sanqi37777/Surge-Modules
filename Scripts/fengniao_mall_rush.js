@@ -33,8 +33,9 @@
  *    通知会报出返回码，再按实测改信封。
  *
  * 安全设计（对应三七实操：App 里两次核对手机号）：
- *  - createOrder 前强制自校验：getAlipayAccount 返回的 account_no（脱敏串）必须
- *    含预存手机号前三位与后四位，对不上立即中止并通知，绝不带着错账号下单
+ *  - createOrder 前强制自校验：getAlipayAccount 返回的 account_no（脱敏串，
+ *    实测只露前 3 + 后 2，如 153******64）必须与预存手机号头尾对上，对不上
+ *    立即中止并通知，绝不带着错账号下单
  *  - 当月成功即停：抢中一次后写当月成功标记，同月再跑直接通知退出
  *  - 手机号 / open_id / alipayOpenID / pizza 登录态只存手机本地 $persistentStore，
  *    绝不进聊天、绝不进仓库、通知里不打印明文
@@ -47,8 +48,8 @@
  */
 
 // ---------- 版本戳（通知里带上，截图一眼能看出手机上跑的是哪版） ----------
-var SCRIPT_VERSION = "20251025-fix1"; // 2026-10-25 修：脚本源改走 raw.githubusercontent.com，
-// 10-25 白天两场手机跑的还是 10-24 首装版（旧文案），手机号参数根本没进脚本。
+var SCRIPT_VERSION = "20251025-fix2"; // 2026-10-25 修：账号比对改按可见数字
+// （account_no 只露前 3 + 后 2，旧规则要求后 4 全对上、永远过不了，20:00 场因此中止）。
 // ---------- 本机预存键（值只在手机上，仓库文件不含任何真实值） ----------
 var KEY_OPEN_ID = "fengniao_mall_open_id_v1";      // goldmall open_id（捕获或重放得到）
 var KEY_OPEN_ID_TS = "fengniao_mall_open_id_ts_v1"; // open_id 上次刷新时间戳（毫秒）
@@ -78,11 +79,15 @@ function maskMobile(m) {
   return m.length === 11 ? m.slice(0, 3) + "****" + m.slice(7) : "(格式不对)";
 }
 
-// 脱敏比对：服务端 account_no（脱敏串）里含预存手机号前三位且后四位一致才算对上
+// 脱敏比对：account_no 只露头尾。实测格式是 153******64（前 3 + 后 2，
+// 2026-10-24 与 2026-10-25 两次返回都是这个格式）。旧规则要求后 4 位全对上，
+// 在这种格式下永远过不了——2026-10-25 20:00 场因此白白中止（当时误以为露后 4 位）。
+// 新规则：去掉 * 后剩下的可见数字，存的号必须以可见前 3 开头、以其余可见数字结尾。
 function accountMatches(accountStr, mobile) {
   if (!accountStr || !mobile) return false;
-  var s = String(accountStr).replace(/\s/g, "");
-  return s.indexOf(mobile.slice(0, 3)) >= 0 && s.indexOf(mobile.slice(7)) >= 0;
+  var vis = String(accountStr).replace(/\D/g, "");
+  if (vis.length < 5) return false;
+  return mobile.slice(0, 3) === vis.slice(0, 3) && mobile.slice(-(vis.length - 3)) === vis.slice(3);
 }
 
 function isCaptureMode() {
@@ -306,8 +311,7 @@ function runRush() {
           }
           var hit = null;
           for (var i = 0; i < list.length; i++) {
-            var s = JSON.stringify(list[i]);
-            if (accountMatches(s, mobile)) { hit = list[i]; break; }
+            if (accountMatches(list[i].account_no || "", mobile)) { hit = list[i]; break; }
           }
           if (!hit) {
             notify("账号校验中止", "返回账号与预存手机号 " + maskMobile(mobile) + " 对不上，不下单。");
