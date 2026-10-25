@@ -46,6 +46,9 @@
  *    手机号绝不能写进仓库模块正文。
  */
 
+// ---------- 版本戳（通知里带上，截图一眼能看出手机上跑的是哪版） ----------
+var SCRIPT_VERSION = "20251025-fix1"; // 2026-10-25 修：脚本源改走 raw.githubusercontent.com，
+// 10-25 白天两场手机跑的还是 10-24 首装版（旧文案），手机号参数根本没进脚本。
 // ---------- 本机预存键（值只在手机上，仓库文件不含任何真实值） ----------
 var KEY_OPEN_ID = "fengniao_mall_open_id_v1";      // goldmall open_id（捕获或重放得到）
 var KEY_OPEN_ID_TS = "fengniao_mall_open_id_ts_v1"; // open_id 上次刷新时间戳（毫秒）
@@ -235,7 +238,7 @@ function runRush() {
       if (digits.length === 11 && digits.charAt(0) === "1") {
         if (digits !== $persistentStore.read(KEY_MOBILE)) {
           $persistentStore.write(digits, KEY_MOBILE);
-          notify("手机号已预存 ✅", "已存到本机（" + maskMobile(digits) + "），之后场次自动跑。");
+          notify("手机号已预存 ✅", "已存到本机（" + maskMobile(digits) + "），之后场次自动跑。脚本版本 " + SCRIPT_VERSION + "。");
         }
       } else {
         notify("手机号参数格式不对", "模块参数 mobile 里请填 11 位手机号（不要带 +86），填好后重新跑一次预存脚本。");
@@ -270,7 +273,7 @@ function runRush() {
     }
     var mobile = $persistentStore.read(KEY_MOBILE);
     if (!mobile) {
-      notify("还缺手机号", "请在模块参数 mobile 里填手机号并手动跑一次「蜂鸟商城手机号预存」，下场就能自动跑。");
+      notify("还缺手机号", "请在模块参数 mobile 里填手机号并手动跑一次「蜂鸟商城手机号预存」，下场就能自动跑。脚本版本 " + SCRIPT_VERSION + "。");
       return $done();
     }
     var base = { open_id: openId, app_type: "h5", version: "1" };

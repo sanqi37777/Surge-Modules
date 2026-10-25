@@ -1,17 +1,17 @@
 #!name=蜂鸟商城话费红包自动抢购
-#!desc=每天 10:00 / 14:00 / 20:00 自动抢 20 元支付宝话费红包（100 金币，每月限抢到 1 次，抢中即停）。整点前 1 分钟预刷新 open_id，整点场次跳过重放直接开抢；再轮询库存、下单前用 getAlipayAccount 做手机号自校验；售罄回 402 时通知「已抢光」。手机号填在模块参数 mobile 一栏即可（只存本机，cron 场次会自动存入本机存储，无需手动跑脚本）；若你的 Surge 没有参数栏，改用本机配置 generic 行 argument 预存。
+#!desc=每天 10:00 / 14:00 / 20:00 自动抢 20 元支付宝话费红包（100 金币，每月限抢到 1 次，抢中即停）。整点前 1 分钟预刷新 open_id，整点场次跳过重放直接开抢；再轮询库存、下单前用 getAlipayAccount 做手机号自校验；售罄回 402 时通知「已抢光」。手机号填在模块参数 mobile 一栏即可（只存本机，cron 场次会自动存入本机存储，无需手动跑脚本）；若你的 Surge 没有参数栏，改用本机配置 generic 行 argument 预存。2026-10-25 修：脚本源由 jsdelivr 切到 raw.githubusercontent.com（旧版脚本缓存在手机上不更新，10-25 两场因此报缺手机号），通知带版本号便于核对。
 #!arguments=mobile
 #!arguments-desc=填写支付宝手机号，仅用于商城下单前的账号自校验，保存在本机模块参数中，不会写进仓库。
 #!category=自动化
 
 [Script]
-蜂鸟商城登录态捕获 = type=http-request, pattern=^https://n\.962699\.com/goldmall/, script-path=https://cdn.jsdelivr.net/gh/sanqi37777/Surge-Modules@main/Scripts/fengniao_mall_rush.js, requires-body=true
+蜂鸟商城登录态捕获 = type=http-request, pattern=^https://n\.962699\.com/goldmall/, script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/fengniao_mall_rush.js, requires-body=true, script-update-interval=3600
 
-蜂鸟商城自动抢购 = type=cron, cronexp="0 10,14,20 * * *", script-path=https://cdn.jsdelivr.net/gh/sanqi37777/Surge-Modules@main/Scripts/fengniao_mall_rush.js, argument="{{{mobile}}}", timeout=120, script-update-interval=3600
+蜂鸟商城自动抢购 = type=cron, cronexp="0 10,14,20 * * *", script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/fengniao_mall_rush.js, argument="{{{mobile}}}", timeout=120, script-update-interval=3600
 
-蜂鸟商城 open_id 预刷新 = type=cron, cronexp="59 9,13,19 * * *", script-path=https://cdn.jsdelivr.net/gh/sanqi37777/Surge-Modules@main/Scripts/fengniao_mall_rush.js, argument=refresh, timeout=60
+蜂鸟商城 open_id 预刷新 = type=cron, cronexp="59 9,13,19 * * *", script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/fengniao_mall_rush.js, argument=refresh, timeout=60, script-update-interval=3600
 
-蜂鸟商城手机号预存 = type=generic, script-path=https://cdn.jsdelivr.net/gh/sanqi37777/Surge-Modules@main/Scripts/fengniao_mall_rush.js, argument="{{{mobile}}}", timeout=120, script-update-interval=3600
+蜂鸟商城手机号预存 = type=generic, script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/fengniao_mall_rush.js, argument="{{{mobile}}}", timeout=120, script-update-interval=3600
 
 [MITM]
 hostname = %APPEND% n.962699.com
