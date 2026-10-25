@@ -19,6 +19,7 @@
 | Rokid | https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Surge/Rokid.sgmodule |
 | 彩云天气 | https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Surge/caiyun.sgmodule |
 | 网盘追剧直连 | https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Surge/PanVod.sgmodule |
+| 美团去广告 | https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Surge/meituan-adblock.sgmodule |
 | 蜂鸟探针 | https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Surge/fengniao.sgmodule |
 
 ## Loon 插件安装链接
