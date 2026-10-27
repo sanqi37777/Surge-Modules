@@ -20,12 +20,17 @@
  *     getClockPrizeDetail 核对今日条目状态，通知报告结果。
  *     2026-10-23 起通知增加三项数字（从 dayRightList 汇总）：今日领取金币、
  *     累计签到天数、累计领取金币总数。
+ *  3. 补签模式（每天 09:30，cron 行 argument=backup）：先只读调一次
+ *     getClockPrizeDetail，今日已签到（status=2）则静默跳过；未签才补一次
+ *     clock，补签成功/失败都通知。09:00 主跑某天一旦失手（如网络抖动），
+ *     补签兜底，不再丢一整天。
  *
  * 隐私：登录态只存手机本地，通知只报返回码/状态，绝不打印 Cookie/token 值。
  */
 
 var STORE_KEY = "fengniao_pizza_headers_v1"; // 与探针相同，沿用其捕获结果
 var API_BASE = "https://httpizza.ele.me/xtop/xtop.knight.task.mng.growth.knightAppClock.";
+var SCRIPT_VERSION = "20251027-backup1"; // 2026-10-27 加：09:30 补签检查（cron argument=backup）
 var KEEP_HEADERS = [
   "Cookie", "X-TOKEN", "HTTP-ACCESS-TOKEN", "HTTP-REQUEST-AUTH",
   "HTTP-DEVICE-ID", "HTTP-DEVICE-TYPE", "HTTP-APP-TYPE", "HTTP-APP-VERSION",
@@ -144,7 +149,21 @@ function summarizeDetail(parsed) {
   }
 }
 
+// 三行通知文案（2026-10-23 要求每天显示的三项数字）；取不到时退回旧版状态文案
+function buildStatText(sum) {
+  if (sum && sum.days !== null) {
+    var gainText = sum.todayGain !== null ? "+" + sum.todayGain : "待确认（今日 status=" + sum.todayStatus + "）";
+    return "今日领取：" + gainText + " 金币\n" +
+      "签到天数：累计 " + sum.days + " 天\n" +
+      "金币总数：累计领取 " + sum.total + " 金币";
+  }
+  return sum && sum.todayStatus !== null
+    ? "详情核对：今日 status=" + sum.todayStatus
+    : "详情未取到今日状态";
+}
+
 function runCheckin() {
+  console.log("[蜂鸟签到] 版本 " + SCRIPT_VERSION + "，主跑");
   var raw = $persistentStore.read(STORE_KEY);
   if (!raw) {
     notify("还没有登录态", "先在 Surge 开着时正常打开一次蜂鸟众包 App，明天 09:00 会自动重试。");
@@ -171,17 +190,7 @@ function runCheckin() {
       var sum = detail.parsed ? summarizeDetail(detail.parsed) : null;
       console.log("[蜂鸟签到] 汇总: " + JSON.stringify(sum));
       // 三七 2026-10-23 要求每天显示的三项数字；取不到时退回旧版状态文案
-      var statText;
-      if (sum && sum.days !== null) {
-        var gainText = sum.todayGain !== null ? "+" + sum.todayGain : "待确认（今日 status=" + sum.todayStatus + "）";
-        statText = "今日领取：" + gainText + " 金币\n" +
-          "签到天数：累计 " + sum.days + " 天\n" +
-          "金币总数：累计领取 " + sum.total + " 金币";
-      } else {
-        statText = sum && sum.todayStatus !== null
-          ? "详情核对：今日 status=" + sum.todayStatus
-          : "详情未取到今日状态";
-      }
+      var statText = buildStatText(sum);
       if (clock.code === 200) {
         notify("签到成功 ✅", statText);
       } else if (clock.code === 5004) {
@@ -196,4 +205,62 @@ function runCheckin() {
   });
 }
 
-if (isCaptureMode()) runCapture(); else runCheckin();
+// cron 行的 argument：主跑不带 argument；补签行带 argument=backup
+function getRunMode() {
+  try {
+    var a = (typeof $argument !== "undefined" && $argument) ? String($argument) : "";
+    return a.trim();
+  } catch (e) { return ""; }
+}
+
+// ---------------- 补签模式（09:30，cron argument=backup） ----------------
+// 先只读查今日状态：已签到则静默跳过；未签才补一次 clock；补签结果通知。
+function runBackupCheck() {
+  console.log("[蜂鸟签到] 版本 " + SCRIPT_VERSION + "，补签检查");
+  var raw = $persistentStore.read(STORE_KEY);
+  if (!raw) { console.log("[蜂鸟签到] 补签：无登录态，跳过"); return $done(); }
+  var saved;
+  try { saved = JSON.parse(raw); } catch (e) { saved = null; }
+  if (!saved || (!saved["Cookie"] && !saved["X-TOKEN"])) {
+    console.log("[蜂鸟签到] 补签：登录态不完整，跳过");
+    return $done();
+  }
+  var headers = buildHeaders(saved);
+  var body = JSON.stringify({ params: { request: { resource: "manual" } } });
+  postXtop("getClockPrizeDetail", headers, body).then(function (detail) {
+    console.log("[蜂鸟签到] 补签 detail: " + JSON.stringify(detail).slice(0, 800));
+    var sum = detail.parsed ? summarizeDetail(detail.parsed) : null;
+    console.log("[蜂鸟签到] 补签汇总: " + JSON.stringify(sum));
+    if (sum && sum.todayStatus === 2) {
+      console.log("[蜂鸟签到] 补签：今日已签到，静默跳过");
+      return $done();
+    }
+    if (detail.error) {
+      notify("补签查询出错", String(detail.error) + "。明早 09:00 会自动再试。");
+      return $done();
+    }
+    postXtop("clock", headers, body).then(function (clock) {
+      console.log("[蜂鸟签到] 补签 clock: " + JSON.stringify(clock).slice(0, 800));
+      if (clock.error) {
+        notify("补签请求出错", String(clock.error));
+        return $done();
+      }
+      postXtop("getClockPrizeDetail", headers, body).then(function (detail2) {
+        console.log("[蜂鸟签到] 补签 detail2: " + JSON.stringify(detail2).slice(0, 800));
+        var sum2 = detail2.parsed ? summarizeDetail(detail2.parsed) : null;
+        var statText = buildStatText(sum2);
+        if (clock.code === 200) {
+          notify("补签成功 ✅", statText);
+        } else if (clock.code === 5004) {
+          notify("今日已签到 ✅", statText);
+        } else {
+          notify("补签未被接受", "clock：HTTP " + clock.status + "，code=" + clock.code +
+            "，" + (clock.msg || clock.raw.slice(0, 160)) + "。" + statText);
+        }
+        $done();
+      });
+    });
+  });
+}
+
+if (isCaptureMode()) runCapture(); else if (getRunMode() === "backup") runBackupCheck(); else runCheckin();
