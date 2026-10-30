@@ -16,6 +16,8 @@
  * 工作方式（与探针同一个文件结构、同一个存储键，探针存过的登录态可直接沿用）：
  *  1. 捕获模式（$request 存在）：App 发原生 pizza 请求时，把白名单登录态头
  *     存到手机本地 $persistentStore（键 fengniao_pizza_headers_v1），持续保鲜。
+ *     捕获行为由模块参数 capture_mode 控制：notify（默认，保存且变化时通知）、
+ *     silent（只保存不通知）、off（不捕获）。
  *  2. 定时模式（每天 09:00）：用存好的头重放一次 clock，再只读调一次
  *     getClockPrizeDetail 核对今日条目状态，通知报告结果。
  *     2026-10-23 起通知增加三项数字（从 dayRightList 汇总）：今日领取金币、
@@ -30,7 +32,7 @@
 
 var STORE_KEY = "fengniao_pizza_headers_v1"; // 与探针相同，沿用其捕获结果
 var API_BASE = "https://httpizza.ele.me/xtop/xtop.knight.task.mng.growth.knightAppClock.";
-var SCRIPT_VERSION = "20251027-backup1"; // 2026-10-27 加：09:30 补签检查（cron argument=backup）
+var SCRIPT_VERSION = "20251030-capturemode"; // 2026-10-30 加：模块参数 capture_mode（notify/silent/off），控制捕获通知
 var KEEP_HEADERS = [
   "Cookie", "X-TOKEN", "HTTP-ACCESS-TOKEN", "HTTP-REQUEST-AUTH",
   "HTTP-DEVICE-ID", "HTTP-DEVICE-TYPE", "HTTP-APP-TYPE", "HTTP-APP-VERSION",
@@ -46,8 +48,20 @@ function isCaptureMode() {
   return typeof $request !== "undefined" && $request;
 }
 
+// 模块参数 capture_mode（捕获行 argument=capture_mode=xxx；不传则默认 notify）：
+//   notify：现行行为，保存且变化时通知；silent：只保存不通知；off：不捕获
+function getCaptureMode() {
+  try {
+    var a = (typeof $argument !== "undefined" && $argument) ? String($argument) : "";
+    var m = a.match(/capture_mode=(notify|silent|off)/);
+    return m ? m[1] : "notify";
+  } catch (e) { return "notify"; }
+}
+
 // ---------------- 捕获模式（与探针一致） ----------------
 function runCapture() {
+  var mode = getCaptureMode();
+  if (mode === "off") { $done({}); return; }
   var src = $request.headers || {};
   var saved = {};
   KEEP_HEADERS.forEach(function (name) {
@@ -64,8 +78,9 @@ function runCapture() {
     var oldVal = $persistentStore.read(STORE_KEY);
     $persistentStore.write(newVal, STORE_KEY);
     console.log("[蜂鸟签到] 登录态头已刷新");
-    // 只在登录态首次保存或发生变化时通知一次，避免每次打开 App 都弹
-    if (oldVal !== newVal) {
+    // notify（默认）：只在登录态首次保存或发生变化时通知一次；
+    // silent：只保存不通知；off：上面已直接返回，不捕获
+    if (oldVal !== newVal && mode !== "silent") {
       notify("获取登录态成功 ✅", "蜂鸟众包登录态已保存，09:00 自动签到将使用最新登录态。");
     }
   }

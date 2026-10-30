@@ -1,11 +1,11 @@
 #!name=蜂鸟众包自动签到（正式版）
-#!desc=每天 09:00 用 App 原生 pizza 请求的登录态头（只存手机本地）重放 clock 签到，5004「今日已签到」视为成功，再调详情接口核对今日状态；登录态首次保存或有变化时会通知一次。无签名可重放已于 2026-10-21 由探针实测通过。执行时间可在模块参数 checkin_time 里改（cron 表达式，默认每天 09:00）。09:30 另有一次补签检查：先查今日状态，未签才补 clock，已签则静默跳过（补签时间可在模块参数 backup_time 里改）。脚本走 raw 地址，免 CDN 缓存滞后。
-#!arguments=checkin_time:0 9 * * *,backup_time:30 9 * * *
-#!arguments-desc=签到执行时间 checkin_time，cron 表达式，如 30 8 * * * 表示每天 8:30，默认 0 9 * * * 即每天 09:00；补签检查时间 backup_time，cron 表达式，默认 30 9 * * * 即每天 09:30。改完更新模块即可。
+#!desc=每天 09:00 用 App 原生 pizza 请求的登录态头（只存手机本地）重放 clock 签到，5004「今日已签到」视为成功，再调详情接口核对今日状态；登录态首次保存或有变化时会通知一次。无签名可重放已于 2026-10-21 由探针实测通过。执行时间可在模块参数 checkin_time 里改（cron 表达式，默认每天 09:00）。09:30 另有一次补签检查：先查今日状态，未签才补 clock，已签则静默跳过（补签时间可在模块参数 backup_time 里改）。脚本走 raw 地址，免 CDN 缓存滞后。捕获通知可在模块参数 capture_mode 里改：notify（默认，变化时通知）、silent（只保存不通知）、off（不捕获）。
+#!arguments=checkin_time:0 9 * * *,backup_time:30 9 * * *,capture_mode:notify
+#!arguments-desc=签到执行时间 checkin_time，cron 表达式，如 30 8 * * * 表示每天 8:30，默认 0 9 * * * 即每天 09:00；补签检查时间 backup_time，cron 表达式，默认 30 9 * * * 即每天 09:30；捕获模式 capture_mode：notify（默认，保存且变化时通知）、silent（只保存不通知）、off（不捕获，登录态过期后需重新开启并进 App 刷新）。改完更新模块即可。
 #!category=自动化
 
 [Script]
-pizza登录态捕获 = type=http-request, pattern=^https://httpizza\.ele\.me/lpd_knight\., script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/eleme_checkin_v2.js, requires-body=false, script-update-interval=3600
+pizza登录态捕获 = type=http-request, pattern=^https://httpizza\.ele\.me/lpd_knight\., script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/eleme_checkin_v2.js, requires-body=false, script-update-interval=3600, argument=capture_mode={{{capture_mode}}}
 
 蜂鸟每日签到 = type=cron, cronexp="{{{checkin_time}}}", script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/eleme_checkin_v2.js, timeout=60, script-update-interval=3600
 
