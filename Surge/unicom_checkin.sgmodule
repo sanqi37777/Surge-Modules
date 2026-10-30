@@ -1,0 +1,13 @@
+#!name=中国联通首页签到
+#!desc=由 smallfawn/QLScriptPublic 的联通脚本抽出的最小路线：仅首页签到区（getContinuous 查状态 + daySign 打卡），领话费红包/积分。认证只用 Cookie（token_online + appId + 本地 UUID）加一个 UA，不用 RSA；token_online 由捕获脚本从联通 App 的 onLine.htm 请求自动存（只存手机本地），appId 抓不到时按原版格式本地生成。天天领现金（立减金）等不在本模块，签到跑通后再挖。
+#!arguments=unicom_sign_time:0 9 * * *,capture_mode:notify
+#!arguments-desc=签到时间 unicom_sign_time，cron 表达式，默认 0 9 * * * 即每天 09:00；捕获模式 capture_mode：notify（默认，保存且变化时通知）、silent（只保存不通知）、off（不捕获）。首次使用前先在 Surge 开着时打开联通 App → 退出登录 → 切换账号登录一次，让捕获存 token_online。改完更新模块即可。
+#!category=自动化
+
+[Script]
+联通登录态捕获 = type=http-request, pattern=^https://m\.client\.10010\.com/mobileService/onLine\.htm, script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/unicom_checkin.js, requires-body=true, argument=capture_mode={{{capture_mode}}}, script-update-interval=3600
+
+联通首页签到 = type=cron, cronexp="{{{unicom_sign_time}}}", script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/unicom_checkin.js, timeout=60, script-update-interval=3600
+
+[MITM]
+hostname = %APPEND% m.client.10010.com
