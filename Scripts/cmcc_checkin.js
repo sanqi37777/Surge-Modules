@@ -14,6 +14,12 @@
  *     奖品在 data.markPrize（FLOW→MB，其余→元）
  *  6. POST /qwhdhub/api/mark/mark31/taskAward/<id>  领累计/连签奖励
  *     （data.prizeName/prizeValue/prizeCategory，FLOW→MB、FEE→元）
+ *  7. AI豆任务（参数 cmcc_tasks=on 时）：POST taskList → 对 status=0 的任务
+ *     taskInfo 取 taskType/scanTime/taskToken → 无 taskToken 的走 finishTask 阶梯
+ *     （直报 → 访问 jumpUrl 后带目标页 Referer 重试 → 等 scanTime 重试 →
+ *     特殊处理走 hlwyxhdhub 握手）；有 taskToken 的直接握手
+ *     （getOneTaskInfo 取 cToken → openFinish）；成功后 getTaskAward 领 AI豆。
+ *     外部合作区与需真实关注公众号的任务无法代做，直接跳过。
  *
  * 凭证（只存手机本地）：
  *  - 手机号：模块参数 cmcc_phone（必填，11 位）
@@ -35,7 +41,7 @@ var JWT_KEY = "cmcc_jwt_v1"; // {jwt, phone, first_seen, saved_at}
 var BASE = "https://wx.10086.cn";
 var ACTIVITY_ID = "1021122301";
 var CHANNEL_ID = "P00000109876";
-var SCRIPT_VERSION = "20251030-v1";
+var SCRIPT_VERSION = "20251030-v2";
 var UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148/wkwebview leadeon/12.5.2/CMCCIT";
 
 function notify(subtitle, body) {
@@ -177,8 +183,8 @@ function saveJwt(phone, jwt, oldFirstSeen) {
 }
 
 // 换取活动会话：返回 {referer, cookie}
-function exchangeSession(phone, cred, forceAppToken) {
-  var actUrl = BASE + "/qwhdhub/qwhdmark/" + ACTIVITY_ID + "?channelId=" + CHANNEL_ID;
+function exchangeSession(phone, cred, forceAppToken, actUrlOverride) {
+  var actUrl = actUrlOverride || (BASE + "/qwhdhub/qwhdmark/" + ACTIVITY_ID + "?channelId=" + CHANNEL_ID);
   var uaHeaders = { "user-agent": UA, "accept-language": "zh-CN,zh-Hans;q=0.9" };
   return httpGet(BASE + "/qwhdsso/login?dlwmh=true&actUrl=" + encodeURIComponent(actUrl), uaHeaders).then(function (r) {
     if (r.error) throw new Error("登录页请求失败: " + r.error);
@@ -233,6 +239,170 @@ function finishLogin(resp, phone) {
     var cookie = extractSessionCookie(r.headers);
     if (!cookie) throw new Error("未取得活动会话令牌（SESSION_TOKEN），会话兑换失败");
     return { referer: data.url, cookie: cookie };
+  });
+}
+
+// ---------------- AI豆任务（mark/task 体系，与原版 run_mark_tasks 对齐） ----------------
+var OPEN_TASK_ENTRY = BASE + "/hlwyxhdhub/act-wedrecharge/1024101716?pageId=1849008675699650560&channelId=P00000093619";
+var handCtx = null; // 握手会话 {referer, cookie}，跨任务复用
+
+// 等待：Surge 未必提供 setTimeout 时直接跳过（原版注释：立即重试 often works）
+function sleepSec(sec) {
+  return new Promise(function (resolve) {
+    if (typeof setTimeout === "function" && sec > 0) setTimeout(resolve, Math.min(sec, 15) * 1000);
+    else resolve();
+  });
+}
+
+// 通用 API 调用（网关偶发返回 HTML 时按失败结构返回，不抛错）
+function apiCall(path, referer, cookie, bodyObj) {
+  var h = baseHeaders(referer);
+  if (cookie) h["Cookie"] = cookie;
+  return httpPost(BASE + path, h, bodyObj || {}).then(function (r) {
+    if (r.error) return { code: "NETWORK_ERROR", msg: r.error };
+    var j = parseJson(r.body);
+    return j || { code: "HTTP_" + (r.status || 0), msg: "响应非 JSON" };
+  });
+}
+
+// 握手会话：与主会话同一套凭证（jwt 跨 hub 通用），只换活动页
+function getHandSession(phone, cred) {
+  if (handCtx) return Promise.resolve(handCtx);
+  return exchangeSession(phone, cred, false, OPEN_TASK_ENTRY).then(function (s) {
+    handCtx = s;
+    return s;
+  });
+}
+
+// 开放平台握手：getOneTaskInfo 取 cToken → openFinish；失败则换新 cToken 等满 scanTime 再报
+function openHandshake(phone, cred, jtToken, scan) {
+  return getHandSession(phone, cred).then(function (hs) {
+    function getCt() {
+      return apiCall("/hlwyxhdhub/api/open/_pub/task/getOneTaskInfo", hs.referer, hs.cookie, { jtToken: jtToken }).then(function (info) {
+        var d = info.data || {};
+        return { ct: d.cToken || "", scanTime: d.scanTime };
+      });
+    }
+    return getCt().then(function (first) {
+      if (!first.ct) return false;
+      return apiCall("/hlwyxhdhub/api/open/_pub/task/openFinish", hs.referer, hs.cookie, { cToken: first.ct }).then(function (fin) {
+        if (fin.code === "SUCCESS") return true;
+        return getCt().then(function (second) {
+          if (!second.ct) return false;
+          var wait = parseInt(second.scanTime || scan || 0, 10) || 0;
+          return sleepSec(wait + 1).then(function () {
+            return apiCall("/hlwyxhdhub/api/open/_pub/task/openFinish", hs.referer, hs.cookie, { cToken: second.ct }).then(function (fin2) {
+              return fin2.code === "SUCCESS";
+            });
+          });
+        });
+      });
+    });
+  }).catch(function () { return false; });
+}
+
+// 签到页 AI豆任务：返回一行总结，内部失败不抛错
+function runMarkTasks(phone, cred, mainReferer, mainCookie) {
+  function taskApi(path, bodyObj) {
+    return apiCall(path, mainReferer, mainCookie, bodyObj);
+  }
+  return taskApi("/qwhdhub/api/mark/task/taskList", {}).then(function (tl) {
+    var tasks = ((tl.data || {}).tasks) || [];
+    var ext = tasks.filter(function (t) { return t.status === 0 && t.taskClasifiName === "外部合作区"; });
+    var todo = tasks.filter(function (t) { return t.status === 0 && t.taskClasifiName !== "外部合作区"; });
+    var doneList = tasks.filter(function (t) { return t.status === 1; });
+    var got = 0, skipped = 0, beans = 0;
+    var p = Promise.resolve();
+    // 先补领已完成待领奖
+    doneList.forEach(function (t) {
+      var tid = String(t.taskId || "");
+      if (!tid) return;
+      p = p.then(function () {
+        return taskApi("/qwhdhub/api/mark/task/getTaskAward", { taskId: tid });
+      }).then(function (aw) {
+        if (aw.code === "SUCCESS") {
+          got += 1;
+          var n = parseInt(((aw.data || {}).awardNum), 10);
+          if (!isNaN(n)) beans += n;
+        }
+      }).catch(function () {});
+    });
+    todo.forEach(function (t) {
+      var tid = String(t.taskId || "");
+      if (!tid) return;
+      p = p.then(function () { return doOneTask(t, tid); }).then(function (ok) {
+        if (ok) got += 1; else skipped += 1;
+      }).catch(function () { skipped += 1; });
+    });
+    function doOneTask(t, tid) {
+      var ju = String(t.jumpUrl || "");
+      function finish(taskType, refererOverride) {
+        var h = baseHeaders(refererOverride || mainReferer);
+        h["Cookie"] = mainCookie;
+        return httpPost(BASE + "/qwhdhub/api/mark/task/finishTask", h, { taskId: tid, taskType: taskType }).then(function (r) {
+          if (r.error) return { code: "NETWORK_ERROR", msg: r.error };
+          return parseJson(r.body) || { code: "HTTP_" + (r.status || 0), msg: "响应非 JSON" };
+        });
+      }
+      function claim() {
+        return taskApi("/qwhdhub/api/mark/task/getTaskAward", { taskId: tid }).then(function (aw) {
+          if (aw.code === "SUCCESS") {
+            var n = parseInt(((aw.data || {}).awardNum), 10);
+            if (!isNaN(n)) beans += n;
+          }
+          return true;
+        }).catch(function () { return true; });
+      }
+      function checkSpecial(rx, taskType, scan) {
+        if (rx.code === "SUCCESS") return Promise.resolve(true);
+        var m2 = rx.msg || "";
+        if (m2.indexOf("特殊处理") >= 0 || m2.indexOf("openFinish") >= 0) {
+          var mm = ju.match(/taskToken=([^&]+)/);
+          if (!mm) return Promise.resolve(false);
+          return openHandshake(phone, cred, mm[1], scan);
+        }
+        return Promise.resolve(false);
+      }
+      return taskApi("/qwhdhub/api/mark/task/taskInfo", { taskId: tid }).then(function (info) {
+        var d = info.data || {};
+        var taskType = String(d.taskType || "");
+        var scan = parseInt(d.scanTime || 0, 10) || 0;
+        var taskToken = d.taskToken || "";
+        if (taskToken) {
+          return openHandshake(phone, cred, taskToken, scan).then(function (ok) {
+            return ok ? claim() : false;
+          });
+        }
+        return finish(taskType, null).then(function (r) {
+          var msg = r.msg || "";
+          if (r.code === "SUCCESS") return true;
+          if (msg.indexOf("公众号") >= 0) return false; // 需真实关注，放弃
+          if (ju.indexOf("https://") === 0) {
+            return httpGet(ju, {}).catch(function () {}).then(function () {
+              return finish(taskType, ju);
+            }).then(function (r2) {
+              if (r2.code === "SUCCESS") return true;
+              if (scan) {
+                return sleepSec(Math.min(scan, 15) + 1).then(function () {
+                  return finish(taskType, ju);
+                }).then(function (r3) {
+                  return checkSpecial(r3, taskType, scan);
+                });
+              }
+              return checkSpecial(r2, taskType, scan);
+            });
+          }
+          return checkSpecial(r, taskType, scan);
+        }).then(function (ok) {
+          return ok ? claim() : false;
+        });
+      });
+    }
+    return p.then(function () {
+      return "AI豆任务：" + todo.length + " 个待办，完成 " + got + " 个，+" + beans + " AI豆，跳过 " + skipped + " 个（第三方 App/真实操作类），外部合作区 " + ext.length + " 个未计入";
+    });
+  }).catch(function (e) {
+    return "AI豆任务失败: " + String((e && e.message) || e);
   });
 }
 
@@ -336,8 +506,12 @@ function runCheckin() {
         });
       });
       return p.then(function () {
+        if (getArgValue("tasks") === "off") return null;
+        return runMarkTasks(phone, cred, ctx.referer, ctx.cookie);
+      }).then(function (taskLine) {
         var body = "累计签到 " + acc + " 天\n" + signLines.join("\n");
         if (claimLines.length) body += "\n" + claimLines.join("\n");
+        if (taskLine) body += "\n" + taskLine;
         notify(signed ? "今日已签到 ✅" : "签到成功 ✅", body);
         $done();
       });
