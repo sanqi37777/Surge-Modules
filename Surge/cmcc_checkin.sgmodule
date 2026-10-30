@@ -1,0 +1,13 @@
+#!name=中国移动自动签到
+#!desc=由 yupaiLy/cmcc-auto-checkin 的签到主链移植：每日签到 + 领取累计/连签奖励（流量/话费券）。凭证由捕获脚本从中国移动 App 的 appTokenLogin 请求自动存（只存手机本地），手机号填模块参数 cmcc_phone。原仓库已被作者归档（只读），活动 ID / 接口若变更以实测为准；另注意原版需老式 TLS 套件才能握手 wx.10086.cn，Surge 能否协商须在手机上实测。
+#!arguments=cmcc_phone:,cmcc_sign_time:0 9 * * *,capture_mode:notify
+#!arguments-desc=手机号 cmcc_phone（必填，11 位）；签到时间 cmcc_sign_time，cron 表达式，默认 0 9 * * * 即每天 09:00；捕获模式 capture_mode：notify（默认，保存且变化时通知）、silent（只保存不通知）、off（不捕获）。首次使用前先在 Surge 开着时打开中国移动 App → 我的 → 签到领流量，进一次签到页让捕获存凭证。改完更新模块即可。
+#!category=自动化
+
+[Script]
+移动登录态捕获 = type=http-request, pattern=^https://wx\.10086\.cn/qwhdsso/, script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/cmcc_checkin.js, requires-body=true, argument=capture_mode={{{capture_mode}}}, script-update-interval=3600
+
+移动每日签到 = type=cron, cronexp="{{{cmcc_sign_time}}}", script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/cmcc_checkin.js, argument=phone={{{cmcc_phone}}}, timeout=120, script-update-interval=3600
+
+[MITM]
+hostname = %APPEND% wx.10086.cn
