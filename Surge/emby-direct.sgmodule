@@ -1,0 +1,6 @@
+#!name=Emby 公益服直连
+#!desc=Emby 播放流量走 DIRECT，不经过代理节点，避免视频流烧爆 Cloudflare Workers 额度；规则表在仓库 Rules/Emby.list，新增服务器只需更新规则表，无需重装模块。
+#!author=sanqi37777
+
+[Rule]
+RULE-SET,https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Rules/Emby.list,DIRECT,extended-matching,no-resolve
