@@ -214,11 +214,11 @@ function exchangeSession(phone, cred, forceAppToken, actUrlOverride) {
         return httpPost(loginUrl, uaHeaders, body2).then(function (r3) {
           if (r3.error) throw new Error("appTokenLogin 请求失败: " + r3.error);
           var resp3 = parseJson(r3.body);
-          if (!resp3 || resp3.code !== "SUCCESS") throw new Error("appTokenLogin 失败: " + (resp3 ? (resp3.code + " " + (resp3.msg || "")) : "空响应") + "，请重新进 App 签到页抓一次");
+          if (!resp3 || resp3.code !== "SUCCESS") throw new Error("appTokenLogin 失败: " + (resp3 ? (resp3.code + " " + (resp3.msg || "")) : "空响应") + "，请重新进 App 签到页抓一次" + " [诊断: 状态=" + (r3 && r3.status) + " 字节=" + ((r3 && r3.body) ? r3.body.length : 0) + " 路径=app_token回落 参数名=" + (typeof body2 !== "undefined" ? Object.keys(body2).join(",") : "?") + " 头名=" + (typeof uaHeaders !== "undefined" ? Object.keys(uaHeaders).join(",") : "?") + "]");
           return finishLogin(resp3, phone);
         });
       }
-      throw new Error("appTokenLogin 失败: " + (resp ? (resp.code + " " + (resp.msg || "")) : "空响应") + "，请重新进 App 签到页抓一次");
+      throw new Error("appTokenLogin 失败: " + (resp ? (resp.code + " " + (resp.msg || "")) : "空响应") + "，请重新进 App 签到页抓一次" + " [诊断: 状态=" + (r2 && r2.status) + " 字节=" + ((r2 && r2.body) ? r2.body.length : 0) + " 路径=" + (typeof jwt !== "undefined" && jwt ? "jwt续期" : "app_token") + " 参数名=" + (typeof body !== "undefined" ? Object.keys(body).join(",") : "?") + " 头名=" + (typeof uaHeaders !== "undefined" ? Object.keys(uaHeaders).join(",") : "?") + "]");
     });
   });
 }
