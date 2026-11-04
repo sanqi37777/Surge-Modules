@@ -1,0 +1,40 @@
+# > Emby 公益服直连分流
+# 用途：Emby 播放流量走 DIRECT，不经过代理节点（尤其不走 Cloudflare Workers 节点），
+#      避免视频流烧爆 Workers CPU 额度。
+# 用法：Surge 配置 [Rule] 段加一行（放 [Rule] 段最前面，确保优先命中）：
+#      RULE-SET,https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Rules/Emby.list,DIRECT,extended-matching,no-resolve
+# 加新服：往下面追加 DOMAIN-SUFFIX,<新服域名> 即可，Surge 会按规则集更新间隔自动更新。
+# 来源：ReverseProxyE「节点的艺术」频道公开帖（反代线路）。
+
+# --- 通用反代 ---
+DOMAIN-SUFFIX,emby.noomi.eu.cc
+DOMAIN-SUFFIX,auto.liuerao.dpdns.org
+DOMAIN-SUFFIX,auto.dolby.dpdns.org
+
+# --- OkEmby 专用 ---
+# fd.jzdj 频道原话推荐直连，rex 里路径栏填 /ok
+DOMAIN-SUFFIX,fd.jzdj.dpdns.org
+DOMAIN-SUFFIX,ok.draxy.eu.cc
+DOMAIN-SUFFIX,okemby.wangjunqiang.indevs.in
+DOMAIN-SUFFIX,okemby.wangjunqiang.dev
+DOMAIN-SUFFIX,ok.liuerao.dpdns.org
+DOMAIN-SUFFIX,ok.youko.cc.cd
+
+# --- emos 专用 ---
+DOMAIN-SUFFIX,emos.ujmb.dpdns.org
+DOMAIN-SUFFIX,emos.200038.xyz
+DOMAIN-SUFFIX,emos.dolby.dpdns.org
+DOMAIN-SUFFIX,emos6.dolby.dpdns.org
+DOMAIN-SUFFIX,emos.biu.gv.uy
+DOMAIN-SUFFIX,emos.wangjunqiang.indevs.in
+DOMAIN-SUFFIX,emos.cnmbyd.xyz
+DOMAIN-SUFFIX,emos.137127.xyz
+DOMAIN-SUFFIX,emos.660990.xyz
+DOMAIN-SUFFIX,emos.255432.xyz
+DOMAIN-SUFFIX,emos.030666.xyz
+DOMAIN-SUFFIX,emos.goldenarch.qzz.io
+DOMAIN-SUFFIX,emosbest.indevs.in
+DOMAIN-SUFFIX,emby.smartstart.eu.org
+
+# --- 以后加新服往这里追加（每行一个域名） ---
+# DOMAIN-SUFFIX,新服域名
