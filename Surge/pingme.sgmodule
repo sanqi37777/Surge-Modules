@@ -1,0 +1,13 @@
+#!name=PingMe 签到
+#!desc=PingMe 每日签到 + 看视频领金币（多账号），改自 leiyiyan/resource 的通用版（原作者 怎么肥事）。账号由捕获脚本从 PingMe App 的接口请求自动存（只存手机本地），存储键沿用原版 pingme_accounts_v1。
+#!arguments=pingme_sign_time:0 9 * * *,pingme_max_video:5,pingme_video_delay:8000,pingme_account_gap:3500
+#!arguments-desc=签到时间 pingme_sign_time，cron 表达式，默认 0 9 * * * 即每天 09:00；每天看视频数 pingme_max_video，默认 5；视频间隔 pingme_video_delay（毫秒），默认 8000；多账号间隔 pingme_account_gap（毫秒），默认 3500。首次使用前先在 Surge 开着时打开 PingMe App，让捕获存账号参数。改完更新模块即可。
+#!category=自动化
+
+[Script]
+PingMe 账号捕获 = type=http-request, pattern=^https://api\.pingmeapp\.net/app/queryBalanceAndBonus, script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/pingme.js, requires-body=0, script-update-interval=3600
+
+PingMe 每日签到 = type=cron, cronexp="{{{pingme_sign_time}}}", script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/pingme.js, argument=PINGME_MAX_VIDEO={{{pingme_max_video}}}&PINGME_VIDEO_DELAY={{{pingme_video_delay}}}&PINGME_ACCOUNT_GAP={{{pingme_account_gap}}}, timeout=300, script-update-interval=3600
+
+[MITM]
+hostname = %APPEND% api.pingmeapp.net
