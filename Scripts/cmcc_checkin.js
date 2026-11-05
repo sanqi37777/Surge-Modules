@@ -38,10 +38,16 @@
 
 var CRED_KEY = "cmcc_cred_v1"; // {app_token, province_code, city_code}
 var JWT_KEY = "cmcc_jwt_v1"; // {jwt, phone, first_seen, saved_at}
+// BoxJs 备份键（与 BoxJs/sanqi.boxjs.json 订阅对应；写入即由 BoxJs 备份，Surge 数据丢了可从 BoxJs 恢复）
+var BOX_PHONE = "@sanqi.cmcc.Settings.phone";
+var BOX_TOKEN = "@sanqi.cmcc.Settings.token";
+var BOX_PROV = "@sanqi.cmcc.Settings.province_code";
+var BOX_CITY = "@sanqi.cmcc.Settings.city_code";
+var BOX_JWT = "@sanqi.cmcc.Settings.jwt";
 var BASE = "https://wx.10086.cn";
 var ACTIVITY_ID = "1021122301";
 var CHANNEL_ID = "P00000109876";
-var SCRIPT_VERSION = "20251030-v2";
+var SCRIPT_VERSION = "20251105-v3"; // v3：凭证镜像到 BoxJs 备份键（可从 BoxJs 恢复）
 var UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148/wkwebview leadeon/12.5.2/CMCCIT";
 
 function notify(subtitle, body) {
@@ -74,6 +80,11 @@ function parseJson(text) {
   try { return JSON.parse(text); } catch (e) { return null; }
 }
 
+// 写 BoxJs 备份键（只做镜像，不影响主流程；失败也不抛错）
+function boxWrite(key, val) {
+  try { if (val) $persistentStore.write(String(val), key); } catch (e) {}
+}
+
 // ---------------- 捕获模式：存 App 的 appTokenLogin 票据 ----------------
 function runCapture() {
   var mode = getCaptureMode();
@@ -103,6 +114,10 @@ function runCapture() {
     var newVal = JSON.stringify({ app_token: token, province_code: prov, city_code: city });
     var oldVal = $persistentStore.read(CRED_KEY);
     $persistentStore.write(newVal, CRED_KEY);
+    // 镜像到 BoxJs 备份键
+    boxWrite(BOX_TOKEN, token);
+    boxWrite(BOX_PROV, prov);
+    boxWrite(BOX_CITY, city);
     log("移动登录态已刷新");
     if (oldVal !== newVal && mode !== "silent") {
       notify("获取登录态成功 ✅", "中国移动登录态已保存，每日签到将使用最新登录态。");
@@ -164,13 +179,20 @@ function todayStr() {
 
 function readJwt(phone) {
   var raw = $persistentStore.read(JWT_KEY);
-  if (!raw) return null;
+  if (raw) {
+    try {
+      var j = JSON.parse(raw);
+      if (j.phone === phone && Date.now() / 1000 - (j.saved_at || 0) <= 30 * 86400) {
+        return j.jwt || null;
+      }
+    } catch (e) {}
+  }
+  // 主存储没有/过期，回落 BoxJs 备份里的 jwt（由 BoxJs 恢复后可直接用）
   try {
-    var j = JSON.parse(raw);
-    if (j.phone !== phone) return null;
-    if (Date.now() / 1000 - (j.saved_at || 0) > 30 * 86400) return null;
-    return j.jwt || null;
-  } catch (e) { return null; }
+    var bj = $persistentStore.read(BOX_JWT);
+    if (bj) return bj;
+  } catch (e) {}
+  return null;
 }
 
 function saveJwt(phone, jwt, oldFirstSeen) {
@@ -180,6 +202,9 @@ function saveJwt(phone, jwt, oldFirstSeen) {
     first_seen: oldFirstSeen || Date.now() / 1000,
     saved_at: Date.now() / 1000
   }), JWT_KEY);
+  // 镜像到 BoxJs 备份键
+  boxWrite(BOX_JWT, jwt);
+  boxWrite(BOX_PHONE, phone);
 }
 
 // 换取活动会话：返回 {referer, cookie}
@@ -415,6 +440,19 @@ function runCheckin() {
     return $done();
   }
   var cred = parseJson($persistentStore.read(CRED_KEY) || "");
+  if (!cred || !cred.app_token) {
+    // 主存储没有，回落 BoxJs 备份里的凭证（由 BoxJs 恢复后可直接用）
+    try {
+      var bt = $persistentStore.read(BOX_TOKEN) || "";
+      if (bt) {
+        cred = {
+          app_token: bt,
+          province_code: $persistentStore.read(BOX_PROV) || "",
+          city_code: $persistentStore.read(BOX_CITY) || ""
+        };
+      }
+    } catch (e) {}
+  }
   if (!cred || !cred.app_token) {
     notify("还没有移动登录态", "先在 Surge 开着时打开中国移动 App → 我的 → 签到领流量，进一次签到页让捕获存凭证，明天会自动签到。");
     return $done();

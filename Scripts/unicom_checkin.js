@@ -33,7 +33,11 @@
 var CRED_KEY = "unicom_cred_v1"; // {token_online, appId}
 var COOKIE_KEY = "unicom_cookie_v1"; // 完整 Cookie 直传（备用存储键）
 var COOKIE_PLACEHOLDER = "请粘贴联通App的完整Cookie"; // 模块参数未填时的占位，视作未提供
-var SCRIPT_VERSION = "20251105-v2";
+// BoxJs 备份键（与 BoxJs/sanqi.boxjs.json 订阅对应；写入即由 BoxJs 备份，Surge 数据丢了可从 BoxJs 恢复）
+var BOX_COOKIE = "@sanqi.unicom.Settings.cookie";
+var BOX_TOKEN = "@sanqi.unicom.Settings.token_online";
+var BOX_APPID = "@sanqi.unicom.Settings.appId";
+var SCRIPT_VERSION = "20251105-v3"; // v3：凭证镜像到 BoxJs 备份键（可从 BoxJs 恢复）
 var UA = "Dalvik/2.1.0 (Linux; U; Android 12; Mi 10 Pro MIUI/21.11.3);unicom{version:android@11.0802}";
 
 function notify(subtitle, body) {
@@ -82,19 +86,26 @@ function getCookieArg() {
   } catch (e) { return ""; }
 }
 
-// 完整 Cookie 来源：优先模块参数 unicom_cookie，其次本地存储 unicom_cookie_v1
+// 完整 Cookie 来源：优先模块参数 unicom_cookie，其次本地存储 unicom_cookie_v1，再次 BoxJs 备份
 function getFullCookie() {
   var c = getCookieArg();
   if (c) return c;
   try {
     var s = ($persistentStore.read(COOKIE_KEY) || "").trim();
     if (s && s !== COOKIE_PLACEHOLDER) return s;
+    var b = ($persistentStore.read(BOX_COOKIE) || "").trim();
+    if (b && b !== COOKIE_PLACEHOLDER) return b;
   } catch (e) {}
   return "";
 }
 
 function parseJson(text) {
   try { return JSON.parse(text); } catch (e) { return null; }
+}
+
+// 写 BoxJs 备份键（只做镜像，不影响主流程；失败也不抛错）
+function boxWrite(key, val) {
+  try { if (val) $persistentStore.write(String(val), key); } catch (e) {}
 }
 
 // ---------------- 捕获模式：存 App 的 onLine.htm 登录态 ----------------
@@ -128,6 +139,9 @@ function runCapture() {
     var newVal = JSON.stringify({ token_online: token, appId: appId });
     var oldVal = $persistentStore.read(CRED_KEY);
     $persistentStore.write(newVal, CRED_KEY);
+    // 镜像到 BoxJs 备份键
+    boxWrite(BOX_TOKEN, token);
+    boxWrite(BOX_APPID, appId);
     log("联通登录态已刷新");
     if (oldVal !== newVal && mode !== "silent") {
       notify("获取登录态成功 ✅", "中国联通登录态已保存，首页签到将使用最新登录态。");
@@ -180,13 +194,27 @@ function runCheckin() {
     "User-Agent": UA,
     "Connection": "keep-alive"
   };
-  // 认证优先级：① 模块参数/本地存储里的完整 Cookie 直传；② 捕获的 token_online 自拼
+  // 认证优先级：① 模块参数/本地存储/BoxJs 备份里的完整 Cookie 直传；② 捕获的 token_online 自拼
   var fullCookie = getFullCookie();
   if (fullCookie) {
     log("认证：完整 Cookie 直传");
     headers["Cookie"] = fullCookie;
+    // 镜像到 BoxJs 备份键（模块参数里的 Cookie 也备份一份）
+    boxWrite(BOX_COOKIE, fullCookie);
   } else {
     var cred = parseJson($persistentStore.read(CRED_KEY) || "");
+    if (!cred || !cred.token_online) {
+      // 主存储没有，回落 BoxJs 备份里的 token_online / appId（由 BoxJs 恢复后可直接用）
+      try {
+        var bt = $persistentStore.read(BOX_TOKEN) || "";
+        if (bt) {
+          cred = {
+            token_online: bt,
+            appId: $persistentStore.read(BOX_APPID) || ""
+          };
+        }
+      } catch (e) {}
+    }
     if (!cred || !cred.token_online) {
       notify("还没有联通登录态", "在模块设置里把联通 App 的完整 Cookie 粘贴到 unicom_cookie 一项（只存你自己手机本地），或在 Surge 开着时打开联通 App → 退出登录 → 切换账号登录一次，让捕获存 token_online。");
       return $done();
