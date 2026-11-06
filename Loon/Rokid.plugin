@@ -1,4 +1,5 @@
 #!name = Rokid每日任务
+#!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/rokid.jpg
 #!desc = 由 Surge 模块 Rokid.sgmodule 转换：Rokid每日签到、积分任务及积分查询，每天 08:34 和 17:34 各跑一次。账号密码填插件参数 accounts（只存本机插件参数中，不会写进仓库）。需要 Loon 3.5.1(983) 及以上。注意：Surge 版模块里定时表达式两边是全角引号，Loon 版已改成标准引号，时间不变。
 #!author = sanqi37777
 #!homepage = https://github.com/sanqi37777/Surge-Modules

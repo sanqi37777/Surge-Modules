@@ -1,4 +1,5 @@
 #!name = 百度贴吧签到
+#!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/tieba.jpg
 #!desc = 从 Surge 合集模块 三七合集.sgmodule 里单独抽出的贴吧签到部分（NobyDa 脚本）：每天 08:40 自动签到领经验。Cookie 由捕获脚本从贴吧 App 的 login 请求自动存（只存手机本地）。需要 Loon 3.5.1(983) 及以上。注意：合集里其他去广告规则/重写没有随本插件转换，原因见 Loon/README.md；本插件只含贴吧签到，不会和别的插件重复跑。
 #!author = NobyDa（脚本）/ sanqi37777（抽出）
 #!homepage = https://github.com/sanqi37777/Surge-Modules

@@ -1,4 +1,5 @@
 #!name = 蜂鸟众包自动签到（正式版）
+#!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/fengniao.jpg
 #!desc = 由 Surge 模块 fengniao_checkin.sgmodule 转换：每天 06:10 用 App 原生 pizza 请求的登录态头（只存手机本地）重放 clock 签到，5004「今日已签到」视为成功，再调详情接口核对今日状态；登录态首次保存或有变化时会通知一次。无签名可重放已于 2026-10-21 由探针实测通过。06:40 另有一次补签检查：先查今日状态，未签才补 clock，已签则静默跳过。需要 Loon 3.5.1(983) 及以上。
 #!author = sanqi37777
 #!homepage = https://github.com/sanqi37777/Surge-Modules

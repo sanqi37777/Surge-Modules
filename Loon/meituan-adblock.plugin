@@ -1,4 +1,5 @@
 #!name = 美团App去广告
+#!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/meituan.jpg
 #!desc = 由 Surge 模块 meituan-adblock.sgmodule 转换：ZenmoFeiShi QX 版 MT.snippet 转 Surge：屏蔽美团广告/追踪域名（shark、httpdns、广告 IP 段）+ 8 条响应体重写，去首页/信息流/我的页/搜索/开屏广告；脚本走作者上游 raw 链接，更新自动生效。适用美团 App 12.67.403。需要 Loon 3.5.1(983) 及以上。
 #!author = TG@ZenMoFiShi
 #!homepage = https://github.com/ZenmoFeiShi/Qx

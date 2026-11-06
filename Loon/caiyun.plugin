@@ -1,4 +1,5 @@
 #!name = 彩云天气
+#!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/caiyun.jpg
 #!desc = 由 Surge 模块 caiyun.sgmodule 转换：彩云天气去广告 + 解锁 SVIP，脚本仍指向原作者 wf021325 的地址，上游更新自动生效。注意：大于 7.20.2 的版本不可以 MITM 解锁，需使用最新版（如 7.22.0），可通过登录旧版解锁后在线升级到新版；广告无法消除时可卸载重装，或清除 App 数据后重新登录。需要 Loon 3.5.1(983) 及以上。
 #!author = wf021325（原作）
 #!homepage = https://github.com/sanqi37777/Surge-Modules

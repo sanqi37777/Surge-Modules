@@ -1,4 +1,5 @@
 #!name = 🐻 IQOO社区
+#!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/iqoo.jpg
 #!desc = 由 Surge 模块 IQOO社区任务.sgmodule 转换：IQOO社区每日任务，可自定义执行时间及任务开关。Token 由捕获脚本从 IQOO 社区 App 的 user 接口自动存（只存手机本地）。需要 Loon 3.5.1(983) 及以上。注意：Surge 版里「禁用获取Cookie / 禁用MITM」两个参数并不实际控制任何脚本行（只是提示性文字），Loon 版未保留；如需停用捕获，直接在 Loon 里停用本插件或对应脚本即可。
 #!author = sanqi37777
 #!homepage = https://github.com/sanqi37777/Surge-Modules

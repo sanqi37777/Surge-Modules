@@ -1,4 +1,5 @@
 #!name = 网盘追剧 & 玩偶资源站直连
+#!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/panvod.jpg
 #!desc = 由 Surge 模块 PanVod.sgmodule 转换：国内主流追剧网盘（115/阿里夸克UC/百度/天翼/迅雷/123/移动云盘/光鸭）与玩偶系资源站域名强制直连；规则源自 eulac-dev/Proxy。注意：Surge 版是 RULE-SET 远程引用、上游更新自动生效；Loon 插件的 [Rule] 不能挂远程规则集，本插件已把两份规则表内联（PanVod 47 条 2026-08-14 版、ResourceSite 25 条 2026-10-23 版），上游更新后不会自动生效，需找助理重新同步。需要 Loon 3.5.1(983) 及以上。
 #!author = eulac-dev
 #!homepage = https://github.com/eulac-dev/Proxy

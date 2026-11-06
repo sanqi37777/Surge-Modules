@@ -1,4 +1,5 @@
 #!name = 中国联通首页签到
+#!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/unicom.jpg
 #!desc = 由 Surge 模块 unicom_checkin.sgmodule 转换：仅首页签到区（getContinuous 查状态 + daySign 打卡），领话费红包/积分。认证只用 Cookie（token_online + appId + 本地 UUID）加一个 UA，不用 RSA；token_online 由捕获脚本从联通 App 的 onLine.htm 请求自动存（只存手机本地），appId 抓不到时按原版格式本地生成。需要 Loon 3.5.1(983) 及以上。原脚本由 smallfawn/QLScriptPublic 的联通脚本抽出。
 #!author = sanqi37777
 #!homepage = https://github.com/sanqi37777/Surge-Modules

@@ -1,4 +1,5 @@
 #!name = 中国移动自动签到
+#!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/cmcc.jpg
 #!desc = 由 Surge 模块 cmcc_checkin.sgmodule 转换：每日签到 + 领取累计/连签奖励（流量/话费券）。凭证由捕获脚本从中国移动 App 的 appTokenLogin 请求自动存（只存手机本地），手机号填插件参数 cmcc_phone。需要 Loon 3.5.1(983) 及以上。原脚本由 yupaiLy/cmcc-auto-checkin 移植，原仓库已被作者归档（只读），活动 ID / 接口若变更以实测为准。
 #!author = sanqi37777
 #!homepage = https://github.com/sanqi37777/Surge-Modules

@@ -1,4 +1,5 @@
 #!name = 🏍️ 春风摩托
+#!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/cfmoto.jpg
 #!desc = 由 Surge 模块 CFMOTO.sgmodule 转换：春风摩托每日任务，可自定义执行时间及 Cookie 捕获。脚本仍指向原作者 leiyiyan/resource 的地址，上游更新自动生效。需要 Loon 3.5.1(983) 及以上。注意：Surge 版里「禁用获取Cookie / 禁用MITM」两个参数并不实际控制任何脚本行（只是提示性文字），Loon 版未保留；如需停用捕获，直接在 Loon 里停用本插件或对应脚本即可。
 #!author = sanqi37777
 #!homepage = https://github.com/sanqi37777/Surge-Modules

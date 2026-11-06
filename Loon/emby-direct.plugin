@@ -1,4 +1,5 @@
 #!name = Emby 公益服直连
+#!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/emby.jpg
 #!desc = 由 Surge 模块 emby-direct.sgmodule 转换：Emby 播放流量走 DIRECT，不经过代理节点，避免视频流烧爆 Cloudflare Workers 额度。注意：Surge 版是 RULE-SET 远程引用仓库 Rules/Emby.list，新增服务器只需更新规则表；Loon 插件的 [Rule] 不能挂远程规则集，本插件已把规则表内联（23 个域名，2026-11-06 版），新增服务器后需找助理重新同步本插件。另外主配置 Loon/sanqi-loon-20261106.conf 里也已内联了同一份 23 个域名，两边都是 DIRECT，结果一致。需要 Loon 3.5.1(983) 及以上。
 #!author = sanqi37777
 #!homepage = https://github.com/sanqi37777/Surge-Modules
