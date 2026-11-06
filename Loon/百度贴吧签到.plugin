@@ -1,0 +1,20 @@
+#!name = 百度贴吧签到
+#!desc = 从 Surge 合集模块 三七合集.sgmodule 里单独抽出的贴吧签到部分（NobyDa 脚本）：每天 08:40 自动签到领经验。Cookie 由捕获脚本从贴吧 App 的 login 请求自动存（只存手机本地）。需要 Loon 3.5.1(983) 及以上。注意：合集里其他去广告规则/重写没有随本插件转换，原因见 Loon/README.md；本插件只含贴吧签到，不会和别的插件重复跑。
+#!author = NobyDa（脚本）/ sanqi37777（抽出）
+#!homepage = https://github.com/sanqi37777/Surge-Modules
+#!system = iOS
+#!loon_version = 3.5.1(983)
+#!date = 2026-11-06
+#!tag = 签到,自动化
+#!type = normal
+
+[Argument]
+tieba_sign_time = input,"40 8 * * *",type=string,tag=签到时间,desc=Cron 表达式，默认 40 8 * * * 即每天 08:40。
+capture_enabled = switch,true,type=boolean,tag=启用 Cookie 捕获,desc=关掉后不再捕获登录态（对应 Surge 版里把 tiebaqd_禁用脚本改成 #）。
+
+[Script]
+request if ${url} ~= /^https?:\/\/(c\.tieba|tiebac)\.baidu\.com\/c\/s\/login/i then script("https://raw.githubusercontent.com/NobyDa/Script/master/BDTieBa-DailyBonus/TieBa.js") with enable=${capture_enabled}, tag="百度贴吧Cookie获取"
+cron ${tieba_sign_time} then script("https://raw.githubusercontent.com/NobyDa/Script/master/BDTieBa-DailyBonus/TieBa.js") with tag="百度贴吧签到", timeout=600
+
+[Mitm]
+hostname = c.tieba.baidu.com, tiebac.baidu.com, tieba.baidu.com

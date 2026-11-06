@@ -1,0 +1,105 @@
+#!name = 网盘追剧 & 玩偶资源站直连
+#!desc = 由 Surge 模块 PanVod.sgmodule 转换：国内主流追剧网盘（115/阿里夸克UC/百度/天翼/迅雷/123/移动云盘/光鸭）与玩偶系资源站域名强制直连；规则源自 eulac-dev/Proxy。注意：Surge 版是 RULE-SET 远程引用、上游更新自动生效；Loon 插件的 [Rule] 不能挂远程规则集，本插件已把两份规则表内联（PanVod 47 条 2026-08-14 版、ResourceSite 25 条 2026-10-23 版），上游更新后不会自动生效，需找助理重新同步。需要 Loon 3.5.1(983) 及以上。
+#!author = eulac-dev
+#!homepage = https://github.com/eulac-dev/Proxy
+#!system = iOS
+#!loon_version = 3.5.1(983)
+#!date = 2026-11-06
+#!tag = 直连,追剧
+#!type = normal
+
+[Rule]
+# ---- 追剧网盘 PanVod（47 条，2026-08-14 版）----
+# 上游：https://raw.githubusercontent.com/eulac-dev/Proxy/refs/heads/main/Loon/Rules/PanVod.lsr
+# 115
+DOMAIN,fhnfile.oss-cn-shenzhen.aliyuncs.com,DIRECT
+DOMAIN-SUFFIX,115.com,DIRECT
+DOMAIN-SUFFIX,115cdn.com,DIRECT
+DOMAIN-SUFFIX,115cdn.net,DIRECT
+DOMAIN-SUFFIX,115img.com,DIRECT
+DOMAIN-SUFFIX,116cd.cn,DIRECT
+DOMAIN-SUFFIX,116cd.com,DIRECT
+DOMAIN-SUFFIX,116cd.net,DIRECT
+DOMAIN-SUFFIX,anxia.com,DIRECT
+DOMAIN-SUFFIX,sq.cc,DIRECT
+# 阿里/夸克/UC
+DOMAIN,ynuf.aliapp.org,DIRECT
+DOMAIN-SUFFIX,aliyun.com,DIRECT
+DOMAIN-SUFFIX,alipan.com,DIRECT
+DOMAIN-SUFFIX,alicdn.com,DIRECT
+DOMAIN-SUFFIX,aliyundrive.com,DIRECT
+DOMAIN-SUFFIX,aliyundrive.net,DIRECT
+DOMAIN-SUFFIX,alibaba.com,DIRECT
+DOMAIN-SUFFIX,quark.cn,DIRECT
+DOMAIN-SUFFIX,uc.cn,DIRECT
+DOMAIN-SUFFIX,taobao.com,DIRECT
+DOMAIN-SUFFIX,aliyuncs.com,DIRECT
+# 百度
+DOMAIN,himg.bdimg.com,DIRECT
+DOMAIN-SUFFIX,baidu.com,DIRECT
+DOMAIN-SUFFIX,bcebos.com,DIRECT
+DOMAIN-SUFFIX,bdstatic.com,DIRECT
+DOMAIN-SUFFIX,baidupcs.com,DIRECT
+# 天翼
+DOMAIN,ux.21cn.com,DIRECT
+DOMAIN-SUFFIX,189.cn,DIRECT
+DOMAIN-SUFFIX,dlife.cn,DIRECT
+# 迅雷
+DOMAIN,static.xbase.cloud,DIRECT
+DOMAIN-SUFFIX,xunlei.com,DIRECT
+DOMAIN-SUFFIX,a.88cdn.com,DIRECT
+# 123
+DOMAIN,www.123684.com,DIRECT
+DOMAIN,www.123912.com,DIRECT
+DOMAIN,www.123865.com,DIRECT
+DOMAIN,matomo4397.123245.com,DIRECT
+DOMAIN,umini.shujupie.com,DIRECT
+DOMAIN-SUFFIX,123295.com,DIRECT
+DOMAIN-SUFFIX,cjjd19.com,DIRECT
+DOMAIN-SUFFIX,cnzz.com,DIRECT
+DOMAIN-KEYWORD,123pan,DIRECT
+# 移动云盘
+DOMAIN-SUFFIX,139.com,DIRECT
+DOMAIN-SUFFIX,10086.cn,DIRECT
+DOMAIN-SUFFIX,cmecloud.cn,DIRECT
+DOMAIN-SUFFIX,cmicapm.com,DIRECT
+# 光鸭
+DOMAIN-SUFFIX,guangyapan.com,DIRECT
+DOMAIN-SUFFIX,guangyacdn.com,DIRECT
+# ---- 玩偶系资源站 ResourceSite（25 条，2026-10-23 版）----
+# 上游：https://raw.githubusercontent.com/eulac-dev/Proxy/refs/heads/main/Loon/Rules/ResourceSite.lsr
+# 玩偶哥哥
+DOMAIN-KEYWORD,wogg,DIRECT
+# 木偶
+DOMAIN,www.muoua.top,DIRECT
+DOMAIN-SUFFIX,666291.xyz,DIRECT
+DOMAIN-SUFFIX,333291.xyz,DIRECT
+# 蜡笔
+DOMAIN,fmao.fun,DIRECT
+DOMAIN,www.mmpanpan.site,DIRECT
+DOMAIN-SUFFIX,xiaocgege.shop,DIRECT
+# 至臻
+DOMAIN,www.miqk.cc,DIRECT
+DOMAIN-SUFFIX,mihdr.top,DIRECT
+# 多多
+DOMAIN,tv.214521.xyz,DIRECT
+DOMAIN-KEYWORD,yydsys,DIRECT
+# 二小
+DOMAIN-KEYWORD,erxiaopan,DIRECT
+DOMAIN-KEYWORD,erixaopan,DIRECT
+DOMAIN-KEYWORD,erxiaozhan,DIRECT
+DOMAIN-KEYWORD,2xiaozhan,DIRECT
+DOMAIN-KEYWORD,2xiaopan,DIRECT
+DOMAIN-KEYWORD,wexwp,DIRECT
+# 虎斑/小斑
+IP-CIDR,103.40.14.172/32,DIRECT,no-resolve
+IP-CIDR,38.76.197.172/32,DIRECT,no-resolve
+# 欧歌
+DOMAIN,woog.nxog.eu.org,DIRECT
+DOMAIN,woog.nxog.fun,DIRECT
+DOMAIN,woog.430520.xyz,DIRECT
+# 闪电
+DOMAIN,sd.sduc.site,DIRECT
+DOMAIN,shandian.blog,DIRECT
+# 花卷
+DOMAIN,www.hjzhencai.top,DIRECT

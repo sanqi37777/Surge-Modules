@@ -1,0 +1,22 @@
+#!name = 中国移动自动签到
+#!desc = 由 Surge 模块 cmcc_checkin.sgmodule 转换：每日签到 + 领取累计/连签奖励（流量/话费券）。凭证由捕获脚本从中国移动 App 的 appTokenLogin 请求自动存（只存手机本地），手机号填插件参数 cmcc_phone。需要 Loon 3.5.1(983) 及以上。原脚本由 yupaiLy/cmcc-auto-checkin 移植，原仓库已被作者归档（只读），活动 ID / 接口若变更以实测为准。
+#!author = sanqi37777
+#!homepage = https://github.com/sanqi37777/Surge-Modules
+#!system = iOS
+#!loon_version = 3.5.1(983)
+#!date = 2026-11-06
+#!tag = 签到,自动化
+#!type = normal
+
+[Argument]
+cmcc_phone = input,"fill-your-phone",type=string,tag=手机号,desc=必填，改成自己的 11 位手机号。默认是占位文字 fill-your-phone，不改会通知提醒。
+cmcc_sign_time = input,"0 6 * * *",type=string,tag=签到时间,desc=Cron 表达式，默认 0 6 * * * 即每天 06:00。
+capture_mode = select,"notify","silent","off",type=string,tag=捕获模式,desc=notify（默认，保存且变化时通知）、silent（只保存不通知）、off（不捕获）。
+cmcc_tasks = select,"on","off",type=string,tag=AI豆任务,desc=on（默认，签到后顺带做签到页 AI豆任务并领奖；外部合作区与需真实关注公众号的任务无法代做会跳过）、off（只签到不做任务）。
+
+[Script]
+request if ${url} ~= /^https:\/\/wx\.10086\.cn\/qwhdsso\//i then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/cmcc_checkin.js", "capture_mode=${capture_mode}") with requires_body=true, tag="移动登录态捕获"
+cron ${cmcc_sign_time} then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/cmcc_checkin.js", "phone=${cmcc_phone}&tasks=${cmcc_tasks}") with tag="移动每日签到", timeout=300
+
+[Mitm]
+hostname = wx.10086.cn

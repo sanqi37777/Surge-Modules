@@ -1,0 +1,59 @@
+#!name = 美团App去广告
+#!desc = 由 Surge 模块 meituan-adblock.sgmodule 转换：ZenmoFeiShi QX 版 MT.snippet 转 Surge：屏蔽美团广告/追踪域名（shark、httpdns、广告 IP 段）+ 8 条响应体重写，去首页/信息流/我的页/搜索/开屏广告；脚本走作者上游 raw 链接，更新自动生效。适用美团 App 12.67.403。需要 Loon 3.5.1(983) 及以上。
+#!author = TG@ZenMoFiShi
+#!homepage = https://github.com/ZenmoFeiShi/Qx
+#!system = iOS
+#!loon_version = 3.5.1(983)
+#!date = 2026-11-06
+#!tag = 去广告
+#!type = normal
+
+[Rule]
+DOMAIN,shark-mt.meituan.com,REJECT
+DOMAIN,shark-default.meituan.com,REJECT
+DOMAIN,shark-dp.meituan.com,REJECT
+DOMAIN,shark-ps.meituan.com,REJECT
+DOMAIN,shark-wm.sankuai.com,REJECT
+DOMAIN,shark.dianping.com,REJECT
+DOMAIN-WILDCARD,mquic-*.meituan.com,REJECT
+DOMAIN,httpdnsmultiapi.meituan.com,REJECT
+DOMAIN,httpdnsmultiapivip.meituan.com,REJECT
+DOMAIN,dnspod.meituan.httpdns.qcloud.com,REJECT
+DOMAIN,dnspod.meituan.httpdns.start.qcloud.com,REJECT
+IP-CIDR,202.90.108.13/32,REJECT,no-resolve
+IP-CIDR,202.90.110.46/32,REJECT,no-resolve
+IP-CIDR,202.90.108.69/32,REJECT,no-resolve
+IP-CIDR,202.90.110.45/32,REJECT,no-resolve
+IP-CIDR,202.90.108.68/32,REJECT,no-resolve
+IP-CIDR,202.90.110.48/32,REJECT,no-resolve
+IP-CIDR,202.90.108.67/32,REJECT,no-resolve
+IP-CIDR,202.90.110.36/32,REJECT,no-resolve
+IP-CIDR,202.90.108.54/32,REJECT,no-resolve
+IP-CIDR,202.90.108.55/32,REJECT,no-resolve
+IP-CIDR,203.76.217.51/32,REJECT,no-resolve
+IP-CIDR,203.76.217.53/32,REJECT,no-resolve
+IP-CIDR,203.76.217.241/32,REJECT,no-resolve
+IP-CIDR,203.76.217.243/32,REJECT,no-resolve
+IP-CIDR,103.202.146.30/32,REJECT,no-resolve
+IP-CIDR,103.202.146.49/32,REJECT,no-resolve
+IP-CIDR,101.50.8.64/32,REJECT,no-resolve
+IP-CIDR,103.63.160.64/32,REJECT,no-resolve
+IP-CIDR,103.63.160.69/32,REJECT,no-resolve
+IP-CIDR,103.37.155.77/32,REJECT,no-resolve
+IP-CIDR,119.29.48.215/32,REJECT,no-resolve
+IP-CIDR,42.193.128.160/32,REJECT,no-resolve
+IP-CIDR6,2405:1480:3000:303b::303b/128,REJECT,no-resolve
+IP-CIDR6,2405:1480:1000:3::1e/128,REJECT,no-resolve
+
+[Script]
+response if ${url} ~= /^https?:\/\/apimobile\.meituan\.com\/aggroup\/indexTab/i then script("https://raw.githubusercontent.com/ZenmoFeiShi/Qx/refs/heads/main/MT.js") with requires_body=true, tag="美团首页标签页去广告"
+response if ${url} ~= /^https?:\/\/feedguess\.meituan\.com\/lycoris\/scene\/(gwc_feed1_2265|personalcenter_2154)(\?|$)/i then script("https://raw.githubusercontent.com/ZenmoFeiShi/Qx/refs/heads/main/MT.js") with requires_body=true, tag="美团信息流去广告"
+response if ${url} ~= /^https?:\/\/mt-personalcenter\.meituan\.com\/usercenter\/display/i then script("https://raw.githubusercontent.com/ZenmoFeiShi/Qx/refs/heads/main/MT.js") with requires_body=true, tag="美团我的页面去广告"
+response if ${url} ~= /^https?:\/\/apimobile\.meituan\.com\/group\/v1\/deal\/searchpage\/defaultword/i then script("https://raw.githubusercontent.com/ZenmoFeiShi/Qx/refs/heads/main/MT.js") with requires_body=true, tag="美团搜索默认词去广告"
+response if ${url} ~= /^https?:\/\/apimobile\.meituan\.com\/group\/v1\/deal\/searchpage\/hotword\/city\/divide\/hotrecommend\//i then script("https://raw.githubusercontent.com/ZenmoFeiShi/Qx/refs/heads/main/MT.js") with requires_body=true, tag="美团搜索热推去广告"
+response if ${url} ~= /^https?:\/\/assistify\.meituan\.com\/assistant\/getAppClientHornConfig/i then script("https://raw.githubusercontent.com/ZenmoFeiShi/Qx/refs/heads/main/MT.js") with requires_body=true, tag="美团助手技能去广告"
+response if ${url} ~= /^https?:\/\/mop\.meituan\.com\/mop\/entry\/shoppingCartEntry/i then script("https://raw.githubusercontent.com/ZenmoFeiShi/Qx/refs/heads/main/MT.js") with requires_body=true, tag="美团购物车入口去广告"
+response if ${url} ~= /^https?:\/\/mop\.meituan\.com\/api\/entryModule\/startupPicture/i then script("https://raw.githubusercontent.com/ZenmoFeiShi/Qx/refs/heads/main/MT.js") with requires_body=true, tag="美团开屏图去广告"
+
+[Mitm]
+hostname = apimobile.meituan.com, feedguess.meituan.com, mop.meituan.com, mt-personalcenter.meituan.com, assistify.meituan.com

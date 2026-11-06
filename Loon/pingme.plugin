@@ -1,0 +1,22 @@
+#!name = PingMe 签到
+#!desc = 由 Surge 模块 pingme.sgmodule 转换：PingMe 每日签到 + 看视频领金币（多账号），改自 leiyiyan/resource 的通用版（原作者 怎么肥事）。账号由捕获脚本从 PingMe App 的接口请求自动存（只存手机本地），存储键沿用原版 pingme_accounts_v1。需要 Loon 3.5.1(983) 及以上。
+#!author = sanqi37777
+#!homepage = https://github.com/sanqi37777/Surge-Modules
+#!system = iOS
+#!loon_version = 3.5.1(983)
+#!date = 2026-11-06
+#!tag = 签到,自动化
+#!type = normal
+
+[Argument]
+pingme_sign_time = input,"15 6 * * *",type=string,tag=签到时间,desc=Cron 表达式，默认 15 6 * * * 即每天 06:15。
+pingme_max_video = input,5,type=number,tag=每天看视频数,desc=默认 5。
+pingme_video_delay = input,8000,type=number,tag=视频间隔（毫秒）,desc=默认 8000。
+pingme_account_gap = input,3500,type=number,tag=多账号间隔（毫秒）,desc=默认 3500。
+
+[Script]
+request if ${url} ~= /^https:\/\/api\.pingmeapp\.net\/app\/queryBalanceAndBonus/i then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/pingme.js") with tag="PingMe 账号捕获"
+cron ${pingme_sign_time} then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/pingme.js", "PINGME_MAX_VIDEO=${pingme_max_video}&PINGME_VIDEO_DELAY=${pingme_video_delay}&PINGME_ACCOUNT_GAP=${pingme_account_gap}") with tag="PingMe 每日签到", timeout=300
+
+[Mitm]
+hostname = api.pingmeapp.net

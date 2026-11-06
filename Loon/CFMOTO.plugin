@@ -1,0 +1,23 @@
+#!name = 🏍️ 春风摩托
+#!desc = 由 Surge 模块 CFMOTO.sgmodule 转换：春风摩托每日任务，可自定义执行时间及 Cookie 捕获。脚本仍指向原作者 leiyiyan/resource 的地址，上游更新自动生效。需要 Loon 3.5.1(983) 及以上。注意：Surge 版里「禁用获取Cookie / 禁用MITM」两个参数并不实际控制任何脚本行（只是提示性文字），Loon 版未保留；如需停用捕获，直接在 Loon 里停用本插件或对应脚本即可。
+#!author = sanqi37777
+#!homepage = https://github.com/sanqi37777/Surge-Modules
+#!system = iOS
+#!loon_version = 3.5.1(983)
+#!date = 2026-11-06
+#!tag = 签到,自动化
+#!type = normal
+
+[Argument]
+task_time = input,"0 7 * * *",type=string,tag=定时任务,desc=Cron 表达式，默认 0 7 * * * 即每天 07:00。
+
+[Script]
+response if ${url} ~= /^https:\/\/c\.cfmoto\.com\/jv\/user\/user_info/i then script("https://raw.githubusercontent.com/leiyiyan/resource/main/script/cfmoto/cfmoto.js") with requires_body=true, tag="春风摩托Cookie", timeout=60
+cron ${task_time} then script("https://raw.githubusercontent.com/leiyiyan/resource/main/script/cfmoto/cfmoto.js") with tag="春风摩托任务", timeout=360
+
+[Rewrite]
+^https:\/\/c\.cfmoto\.com\/cfmotoservermall\/app\/ad$ reject-dict
+^https:\/\/c\.cfmoto\.com\/cfmotoservermall\/app\/popwindow reject-dict
+
+[Mitm]
+hostname = c.cfmoto.com

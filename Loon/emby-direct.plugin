@@ -1,0 +1,35 @@
+#!name = Emby 公益服直连
+#!desc = 由 Surge 模块 emby-direct.sgmodule 转换：Emby 播放流量走 DIRECT，不经过代理节点，避免视频流烧爆 Cloudflare Workers 额度。注意：Surge 版是 RULE-SET 远程引用仓库 Rules/Emby.list，新增服务器只需更新规则表；Loon 插件的 [Rule] 不能挂远程规则集，本插件已把规则表内联（23 个域名，2026-11-06 版），新增服务器后需找助理重新同步本插件。另外主配置 Loon/sanqi-loon-20261106.conf 里也已内联了同一份 23 个域名，两边都是 DIRECT，结果一致。需要 Loon 3.5.1(983) 及以上。
+#!author = sanqi37777
+#!homepage = https://github.com/sanqi37777/Surge-Modules
+#!system = iOS
+#!loon_version = 3.5.1(983)
+#!date = 2026-11-06
+#!tag = 直连,Emby
+#!type = normal
+
+[Rule]
+# 规则表来源：https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Rules/Emby.list
+DOMAIN-SUFFIX,emby.noomi.eu.cc,DIRECT
+DOMAIN-SUFFIX,auto.liuerao.dpdns.org,DIRECT
+DOMAIN-SUFFIX,auto.dolby.dpdns.org,DIRECT
+DOMAIN-SUFFIX,fd.jzdj.dpdns.org,DIRECT
+DOMAIN-SUFFIX,ok.draxy.eu.cc,DIRECT
+DOMAIN-SUFFIX,okemby.wangjunqiang.indevs.in,DIRECT
+DOMAIN-SUFFIX,okemby.wangjunqiang.dev,DIRECT
+DOMAIN-SUFFIX,ok.liuerao.dpdns.org,DIRECT
+DOMAIN-SUFFIX,ok.youko.cc.cd,DIRECT
+DOMAIN-SUFFIX,emos.ujmb.dpdns.org,DIRECT
+DOMAIN-SUFFIX,emos.200038.xyz,DIRECT
+DOMAIN-SUFFIX,emos.dolby.dpdns.org,DIRECT
+DOMAIN-SUFFIX,emos6.dolby.dpdns.org,DIRECT
+DOMAIN-SUFFIX,emos.biu.gv.uy,DIRECT
+DOMAIN-SUFFIX,emos.wangjunqiang.indevs.in,DIRECT
+DOMAIN-SUFFIX,emos.cnmbyd.xyz,DIRECT
+DOMAIN-SUFFIX,emos.137127.xyz,DIRECT
+DOMAIN-SUFFIX,emos.660990.xyz,DIRECT
+DOMAIN-SUFFIX,emos.255432.xyz,DIRECT
+DOMAIN-SUFFIX,emos.030666.xyz,DIRECT
+DOMAIN-SUFFIX,emos.goldenarch.qzz.io,DIRECT
+DOMAIN-SUFFIX,emosbest.indevs.in,DIRECT
+DOMAIN-SUFFIX,emby.smartstart.eu.org,DIRECT

@@ -1,0 +1,21 @@
+#!name = 蜂鸟商城话费红包自动抢购
+#!desc = 由 Surge 模块 fengniao_mall_rush.sgmodule 转换：每天 10:00 / 14:00 / 20:00 自动抢 20 元支付宝话费红包（100 金币，每月限抢到 1 次，抢中即停）。整点前 1 分钟预刷新 open_id，整点场次跳过重放直接开抢；再轮询库存、下单前用 getAlipayAccount 做手机号自校验；售罄回 402 时通知「已抢光」。手机号填插件参数 mobile（只存本机）。需要 Loon 3.5.1(983) 及以上。注意：2026 年 11 月额度已抢到，本插件在 11 月剩余时间保持关闭，12 月 1 日 10 点场前再开；不要和 Surge 版同时开。
+#!author = sanqi37777
+#!homepage = https://github.com/sanqi37777/Surge-Modules
+#!system = iOS
+#!loon_version = 3.5.1(983)
+#!date = 2026-11-06
+#!tag = 抢购,自动化
+#!type = normal
+
+[Argument]
+mobile = input,"请填写11位手机号",type=string,tag=支付宝手机号,desc=仅用于商城下单前的账号自校验，保存在本机插件参数中，不会写进仓库。首次使用前先在 Loon 开着时打开蜂鸟众包 App 让捕获存登录态，再手动运行一次「蜂鸟商城手机号预存」把手机号存入本机存储。
+
+[Script]
+request if ${url} ~= /^https:\/\/n\.962699\.com\/goldmall\//i then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/fengniao_mall_rush.js") with requires_body=true, tag="蜂鸟商城登录态捕获"
+cron "0 10,14,20 * * *" then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/fengniao_mall_rush.js", "${mobile}") with tag="蜂鸟商城自动抢购", timeout=120
+cron "59 9,13,19 * * *" then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/fengniao_mall_rush.js", "refresh") with tag="蜂鸟商城 open_id 预刷新", timeout=60
+generic then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/fengniao_mall_rush.js", "${mobile}") with tag="蜂鸟商城手机号预存", timeout=120
+
+[Mitm]
+hostname = n.962699.com
