@@ -1,0 +1,27 @@
+# > 美团众包专用直连分流
+# 用途：美团众包（骑手端）全部流量走 DIRECT，不经过代理节点。
+#      上班用软件，必须好使；只能走直连。
+# 用法：Loon 配置 [Rule] 段加一行（放 [Rule] 段最前面）：
+#      RULE-SET,https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Rules/MeituanZhongbao.list,DIRECT,extended-matching,no-resolve
+#      或把下面 DOMAIN-SUFFIX 行直接粘进 [Rule] 段（每行末尾加 ,DIRECT）。
+# 来源：2026-11-09 02:35 三七 Loon 抓包（64_1794162845900.har，91 条请求，11 个域名），
+#      另补人脸 4 域名与美团系其余后缀。
+# 注意：美团App去广告插件会拦 HTTPDNS（httpdnsmultiapi.meituan.com）与 mquic，
+#      众包要用 HTTPDNS 解析 *.d.meituan.net（198.18.180.x），插件开着会断 DNS，
+#      用众包时须关掉该插件。
+
+# --- 美团众包主域名（抓包实测） ---
+DOMAIN-SUFFIX,meituan.com
+DOMAIN-SUFFIX,meituan.net
+DOMAIN-SUFFIX,dianping.com
+DOMAIN-SUFFIX,sankuai.com
+DOMAIN-SUFFIX,dpfile.com
+
+# --- 人脸识别（上班首次上线用） ---
+DOMAIN-SUFFIX,megvii.com
+DOMAIN-SUFFIX,faceplusplus.com
+DOMAIN-SUFFIX,faceid.com
+DOMAIN-SUFFIX,sensetime.com
+
+# --- 众包直连 IP（抓包见原始 IP 请求） ---
+IP-CIDR,103.37.155.60/32,no-resolve
