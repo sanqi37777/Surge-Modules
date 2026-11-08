@@ -36,5 +36,14 @@ DOMAIN-SUFFIX,emos.goldenarch.qzz.io
 DOMAIN-SUFFIX,emosbest.indevs.in
 DOMAIN-SUFFIX,emby.smartstart.eu.org
 
+# --- 予初Emby 专用 ---
+# 2026-11-08 三七发来；5 条线都指同一服（予初Emby v4.9.5.0），解析到 198.18.165.125-129
+# 实测都通，aaa.yusen6.ccwu.cc 最快；198.18 段为 CGNAT 段，直连是否通需在他手机上实测
+DOMAIN-SUFFIX,13.yusen.cyou
+DOMAIN-SUFFIX,aaa.yusen6.ccwu.cc
+DOMAIN-SUFFIX,emby.yusen.us.ci
+DOMAIN-SUFFIX,embya.yusen.cyou
+DOMAIN-SUFFIX,emby.yusen.cc.cd
+
 # --- 以后加新服往这里追加（每行一个域名） ---
 # DOMAIN-SUFFIX,新服域名
