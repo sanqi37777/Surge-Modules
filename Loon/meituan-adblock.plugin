@@ -1,6 +1,6 @@
 #!name = 美团App去广告
 #!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/meituan.jpg
-#!desc = 由 Surge 模块 meituan-adblock.sgmodule 转换：ZenmoFeiShi QX 版 MT.snippet 转 Surge：屏蔽美团广告/追踪域名（shark、httpdns、广告 IP 段）+ 8 条响应体重写，去首页/信息流/我的页/搜索/开屏广告；脚本走作者上游 raw 链接，更新自动生效。适用美团 App 12.67.403。需要 Loon 3.5.1(983) 及以上。
+#!desc = 由 Surge 模块 meituan-adblock.sgmodule 转换：ZenmoFeiShi QX 版 MT.snippet 转 Surge：屏蔽美团广告/追踪域名（shark、广告 IP 段）+ 8 条响应体重写，去首页/信息流/我的页/搜索/开屏广告；脚本走作者上游 raw 链接，更新自动生效。适用美团 App 12.67.403。需要 Loon 3.5.1(983) 及以上。2026-11-09 改：去掉 httpdns 与 mquic 拦截（众包要用 HTTPDNS 解析 *.d.meituan.net，拦了会断骑手端定位/DNS），去广告本体（shark、广告 IP、8 条重写）不受影响。
 #!author = TG@ZenMoFiShi
 #!homepage = https://github.com/ZenmoFeiShi/Qx
 #!system = iOS
@@ -10,17 +10,13 @@
 #!type = normal
 
 [Rule]
+# 2026-11-09：已去掉 httpdns（4 条）与 mquic（1 条）拦截——众包靠 HTTPDNS 解析 *.d.meituan.net（198.18.180.x），拦了骑手端断网；去广告靠下面 shark、广告 IP 与 [Script] 重写，不受影响。
 DOMAIN,shark-mt.meituan.com,REJECT
 DOMAIN,shark-default.meituan.com,REJECT
 DOMAIN,shark-dp.meituan.com,REJECT
 DOMAIN,shark-ps.meituan.com,REJECT
 DOMAIN,shark-wm.sankuai.com,REJECT
 DOMAIN,shark.dianping.com,REJECT
-DOMAIN-WILDCARD,mquic-*.meituan.com,REJECT
-DOMAIN,httpdnsmultiapi.meituan.com,REJECT
-DOMAIN,httpdnsmultiapivip.meituan.com,REJECT
-DOMAIN,dnspod.meituan.httpdns.qcloud.com,REJECT
-DOMAIN,dnspod.meituan.httpdns.start.qcloud.com,REJECT
 IP-CIDR,202.90.108.13/32,REJECT,no-resolve
 IP-CIDR,202.90.110.46/32,REJECT,no-resolve
 IP-CIDR,202.90.108.69/32,REJECT,no-resolve
