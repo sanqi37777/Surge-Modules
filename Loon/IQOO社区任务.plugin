@@ -1,11 +1,11 @@
 #!name = 🐻 IQOO社区
 #!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/iqoo.jpg
-#!desc = 由 Surge 模块 IQOO社区任务.sgmodule 转换：IQOO社区每日任务，可自定义执行时间及任务开关。Token 由捕获脚本从 IQOO 社区 App 的 user 接口自动存（只存手机本地）。需要 Loon 3.5.1(983) 及以上。注意：Surge 版里「禁用获取Cookie / 禁用MITM」两个参数并不实际控制任何脚本行（只是提示性文字），Loon 版未保留；如需停用捕获，直接在 Loon 里停用本插件或对应脚本即可。
+#!desc = 由 Surge 模块 IQOO社区任务.sgmodule 转换：IQOO社区每日任务，可自定义执行时间及任务开关。Token 由捕获脚本从 IQOO 社区 App 的 user 接口自动存（只存手机本地）。“获取Token开关”关掉就停抓。需要 Loon 3.5.1(983) 及以上。注意：Surge 版里「禁用获取Cookie / 禁用MITM」两个参数并不实际控制任何脚本行（只是提示性文字），Loon 版未保留。
 #!author = sanqi37777
 #!homepage = https://github.com/sanqi37777/Surge-Modules
 #!system = iOS
 #!loon_version = 3.5.1(983)
-#!date = 2026-11-06
+#!date = 2026-11-09
 #!tag = 签到,自动化
 #!type = normal
 
@@ -13,10 +13,11 @@
 sign_time = input,"20 6 * * *",type=string,tag=定时签到,desc=Cron 表达式，默认 20 6 * * * 即每天 06:20。
 thread = switch,false,type=boolean,tag=发帖任务,desc=true 开启，false 关闭。
 draw = switch,false,type=boolean,tag=抽奖任务,desc=true 开启，false 关闭。
+capture = switch,true,type=boolean,tag=获取Token开关,desc=true 开启，打开 IQOO 社区时自动抓登录态；抓完两个号可以关掉，换号或过期时再开。
 browse_count = input,15,type=number,tag=浏览文章数量,desc=1-26，默认 15。
 
 [Script]
-response if ${url} ~= /^https:\/\/bbs-api\.iqoo\.com\/api\/v3\/user\?userId=/i then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/iqoo-surge.js") with requires_body=true, tag="IQOO获取Token", timeout=30
+response if ${url} ~= /^https:\/\/bbs-api\.iqoo\.com\/api\/v3\/user\?userId=/i then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/iqoo-surge.js", "capture=${capture}") with requires_body=true, tag="IQOO获取Token", timeout=30
 cron ${sign_time} then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/iqoo-surge.js", "thread=${thread}&draw=${draw}&browse_count=${browse_count}") with tag="IQOO每日任务", timeout=360
 
 [Mitm]
