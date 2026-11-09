@@ -1,8 +1,10 @@
 /*
  * IQOO社区任务 - Surge 适配启动器
  * 参数：thread=true/false, draw=true/false, browse_count=1-26,
- *       capture=true/false（获取Token开关，只管 http-response 捕获分支；
- *       关了就不下载原始脚本、直接结束，定时任务不受影响；不填默认开）
+ *       comment=true/false（评论任务，默认开；每天发一条“666”评论，
+ *       完成每日“发表评论”任务）, capture=true/false（获取Token开关，
+ *       只管 http-response 捕获分支；关了就不下载原始脚本、直接结束，
+ *       定时任务不受影响；不填默认开）
  */
 const SOURCE_URL = "https://gist.githubusercontent.com/Sliverkiss/bfc5527ad3ea8ac7b0820ca442442452/raw/iqoo.js";
 
@@ -55,6 +57,7 @@ if (typeof $request !== "undefined" && $request && $request.headers && !captureE
     );
     const thread = args.thread === "true" ? "true" : "false";
     const draw = args.draw === "true" ? "true" : "false";
+    const comment = args.comment === "false" ? "false" : "true";
     const count = Math.max(
       1,
       Math.min(26, parseInt(args.browse_count || "15", 10) || 15)
@@ -64,7 +67,7 @@ if (typeof $request !== "undefined" && $request && $request.headers && !captureE
     const replacements = [
       [
         "$.is_thread = ($.isNode() ? process.env['iqoo_thread'] : $.getdata('iqoo_thread')) || 'false';",
-        `$.is_thread = "${thread}"; $.is_draw = "${draw}"; $.browse_count = ${count};`
+        `$.is_thread = "${thread}"; $.is_draw = "${draw}"; $.is_comment = "${comment}"; $.browse_count = ${count};`
       ],
       [
         "let threadList = user.getRandomSubarray(threadIds, 15);",
@@ -86,6 +89,41 @@ if (typeof $request !== "undefined" && $request && $request.headers && !captureE
         "const [title, content] = await this.getContent();",
         `const content = await this.getContent();
             const title = (content || "每日分享").slice(0, 20);`
+      ],
+      [
+        // 发表评论：原脚本没有评论功能，在这里补一个方法
+        "    // 随机选取子数组",
+        `    //发表评论任务（每天发一条“666”评论，完成每日“发表评论”任务）
+    async doCommentTask(threadId) {
+        try {
+            const opts = {
+                url: "/api/v3/posts.create",
+                type: "post",
+                dataType: "json",
+                body: { id: threadId, type: 0, content: "666", source: "", attachments: [] }
+            };
+            let res = await this.fetch(opts);
+            $.log("[" + (this.userName || this.index) + "][INFO] " + ((res && res.Meta && res.Meta.tips && res.Meta.tips[0] && res.Meta.tips[0].message) || (res && res.Message) || "发表评论任务已完成") + "\\n");
+            return res;
+        } catch (e) {
+            this.ckStatus = false;
+            $.log("[" + (this.userName || this.index) + "][ERROR] " + e + "\\n");
+        }
+    }
+
+    // 随机选取子数组`
+      ],
+      [
+        // 每个号每天只评一次（第一个帖子），不要 15 个帖子都评
+        "                    await user.doLikeTask(1);\n\n                    await user.doLikeTask(0);",
+        `                    await user.doLikeTask(1);
+
+                    await user.doLikeTask(0);
+
+                    if ($.is_comment !== "false" && !user.commented) {
+                        await user.doCommentTask(threadId);
+                        user.commented = true;
+                    }`
       ]
     ];
 
