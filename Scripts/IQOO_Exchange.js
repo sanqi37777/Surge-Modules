@@ -1,5 +1,5 @@
 /*
- * IQOO社区定时兑换 v2026-11-09.1
+ * IQOO社区定时兑换 v2026-11-09.2
  * 综合：三七 2026-11-09 11:00 抓包（HAR）+ 原作者 xzxxn777 的 IQOO_Exchange.js
  *
  * 抓包核对过的事实（HAR 里 138 条请求）：
@@ -16,33 +16,44 @@
  * - 请求头按抓包改成微信小程序那套（原作者写的是 Mac 版 Chrome，
  *   Referer 还是旧的 /185/，抓包里是 /262/）。
  * - 原作者先拉 goods.list 再拉地址、兑换间隔 10 秒，抢库存 2 件的东西太慢，
- *   这里改成：抢兑模式跳过商品列表，直接兑；地址 ID 优先用插件参数，
- *   填 0 才现取默认地址；重试默认 5 次、间隔 1.2 秒。
+ *   这里改成：抢兑模式跳过商品列表，直接兑；地址 ID 填 0 就现取每个号
+ *   自己的默认地址；重试默认 5 次、间隔 1.2 秒。
  *
- * 三种用法（同一个脚本，插件里配了两条触发）：
- * 1. http-response：打开一次 IQOO 社区 App，自动把登录态
- *    （userId / Authorization / X-Visitor）存到 $persistentStore，
- *    存上/变了才通知一次，之后不用再填 Token。
- * 2. cron + 商品ID=0：只列商品和当前酷币，不兑换，用来看下一批的 id。
- * 3. cron + 商品ID=目标 id：到点直接兑换，成功后记下来，同一件不再重复跑；
- *    11:30 有一班补跑，同样先看成功标记，没兑上才补。
+ * 多账号（v2026-11-09.2，和签到插件配套）：
+ * - 登录态只抓一次、两边共用。打开 IQOO 社区时，签到脚本把账号存进
+ *   iqoos_data（数组，按 userId 去重），兑换脚本把同一份登录态（含
+ *   X-Visitor）存进 iqoo_exchange_auth（数组，按 userId 去重）。
+ *   两个号各打开一次 App 就都存好了，不用在插件里粘 Token。
+ * - 捕获有个开关（插件参数“获取Token开关”，默认开）：开着时打开 App
+ *   自动抓；两个号都抓完可以关掉，以后换号或登录态过期了再打开抓一次。
+ * - 定时任务跑的时候：先读 iqoo_exchange_auth，再把 iqoos_data 里
+ *   有、兑换这边没有的号也并进来（没 X-Visitor 也照样试一次），
+ *   两个号按顺序各兑一件，同一件商品、每号各 1 个。
+ * - 补跑已删：过了 11:00 那个时间库存就没了，补跑没有意义。
+ *   只剩每天 11:00 一班；同一件已兑成功的号会记下来，不重复花钱。
+ *
+ * 三种用法（同一个脚本）：
+ * 1. http-response：打开一次 IQOO 社区 App，自动把登录态存好，
+ *    存上/变了才通知一次。
+ * 2. cron + 商品ID=0：只列商品和每个号的酷币，不兑换，用来看下一批的 id。
+ * 3. cron + 商品ID=目标 id：11:00 直接兑换，两个号各兑一件。
  *
  * 参数都在插件里填（Surge 模块 #!arguments / Loon 插件 [Argument]），
- * 不要改这个脚本。Token、X-Visitor 填占位符也没关系，
- * 只要第 1 步抓过登录态，定时任务会优先用抓到的。
+ * 不要改这个脚本。账号不用填，全靠第 1 步抓登录态。
  */
 
-var VERSION = '2026-11-09.1';
+var VERSION = '2026-11-09.2';
 var API = 'https://bbs-api.iqoo.com/api';
 var SIGN_KEY = '2618194b0ebb620055e19cf9811d3c13'; // 原作者脚本里的签名密钥
 var APPID = '1002';
-var STORE_AUTH = 'iqoo_exchange_auth';
-var STORE_STATE = 'iqoo_exchange_state';
+var STORE_AUTH = 'iqoo_exchange_auth'; // 数组 [{userId, token, xVisitor, userName, updatedAt}]
+var STORE_SIGNIN = 'iqoos_data'; // 签到脚本的账号数组 [{userId, token, userName}]，只读、用来补账号
+var STORE_STATE = 'iqoo_exchange_state'; // {success: {userId: {giftId, at}}}
 
 var UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_3_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.80(0x18005030) NetType/WIFI Language/zh_CN';
 var REFERER = 'https://servicewechat.com/wxcf4266fbc9463132/262/page-frame.html';
 
-var cfg = { userId: '', token: '', xVisitor: '', giftId: 0, addressId: 0, retry: 5, interval: 1200, backup: false };
+var cfg = { accounts: [], giftId: 0, addressId: 0, retry: 5, interval: 1200, userId: '', token: '', xVisitor: '', userName: '' };
 
 /* ---------------- SHA-256 / HMAC-SHA256 / Base64（纯 JS，不依赖 CryptoJS） ---------------- */
 
@@ -187,13 +198,84 @@ function headerValue(headers, name) {
   return '';
 }
 
-/* ---------------- HTTP ---------------- */
+function acctLabel(a) { return (a && (a.userName || a.userId)) || '账号?'; }
+
+/* ---------------- 账号：读存着的登录态（多账号数组） ---------------- */
+
+// 旧版单账号对象 {userId, token, xVisitor} 升级成数组
+function readAuthArray() {
+  var raw = readJSON(STORE_AUTH);
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter(function (a) { return a && a.userId && a.token; });
+  if (raw.userId && raw.token) return [raw];
+  return [];
+}
+
+function upsertAccount(list, acct) {
+  if (!acct || !acct.userId || !acct.token) return list;
+  var found = false;
+  for (var i = 0; i < list.length; i++) {
+    if (String(list[i].userId) === String(acct.userId)) {
+      list[i] = acct;
+      found = true;
+    }
+  }
+  if (!found) list.push(acct);
+  return list;
+}
+
+// 拼出本次要跑的账号：兑换自己的数组为主，签到脚本的 iqoos_data 里
+// 有、这边没有的号也并进来（没 X-Visitor 也照样试一次）；
+// 插件参数里如果还填着单个账号（旧版留下的），也并进来兜底。
+function loadAccounts(args) {
+  var list = readAuthArray();
+  var signin = readJSON(STORE_SIGNIN);
+  if (Array.isArray(signin)) {
+    signin.forEach(function (s) {
+      if (!s || !s.userId || !s.token) return;
+      var exists = list.some(function (a) { return String(a.userId) === String(s.userId); });
+      if (!exists) list.push({ userId: String(s.userId), token: s.token, xVisitor: '', userName: s.userName || '', updatedAt: '' });
+    });
+  }
+  if (args && args.userId && !isPlaceholder(args.token)) {
+    upsertAccount(list, {
+      userId: String(args.userId), token: args.token,
+      xVisitor: isPlaceholder(args.xVisitor) ? '' : (args.xVisitor || ''),
+      userName: '', updatedAt: ''
+    });
+  }
+  return list;
+}
+
+// 旧版成功标记 {lastSuccessGiftId} 迁移成按账号的 {success: {userId: {giftId, at}}}
+function migrateState(state, accounts) {
+  if (!state) return { success: {} };
+  if (!state.success) state.success = {};
+  if (state.lastSuccessGiftId) {
+    var uid = '';
+    var oldAuth = readJSON(STORE_AUTH);
+    if (oldAuth && !Array.isArray(oldAuth) && oldAuth.userId) uid = String(oldAuth.userId);
+    if (!uid && accounts.length) uid = String(accounts[0].userId);
+    if (uid && !state.success[uid]) state.success[uid] = { giftId: state.lastSuccessGiftId, at: state.lastSuccessAt || '' };
+    delete state.lastSuccessGiftId;
+    delete state.lastSuccessAt;
+  }
+  return state;
+}
+
+/* ---------------- HTTP（按当前账号发请求） ---------------- */
+
+function setAccount(acct) {
+  cfg.userId = String(acct.userId || '');
+  cfg.token = acct.token || '';
+  cfg.xVisitor = acct.xVisitor || '';
+  cfg.userName = acct.userName || '';
+}
 
 function buildHeaders(ts, sig) {
-  return {
+  var h = {
     'content-type': 'application/json',
     'xweb_xhr': '1',
-    'x-visitor': cfg.xVisitor,
     'x-platform': 'mini',
     'sign': 'IQOO-HMAC-SHA256 appid=' + APPID + ',timestamp=' + ts + ',signature=' + sig,
     'authorization': cfg.token,
@@ -206,6 +288,8 @@ function buildHeaders(ts, sig) {
     'Accept-Encoding': 'gzip,compress,br,deflate',
     'Accept-Language': 'zh-CN,zh;q=0.9'
   };
+  if (cfg.xVisitor) h['x-visitor'] = cfg.xVisitor;
+  return h;
 }
 
 function httpReq(method, url, body, ts, sig) {
@@ -237,10 +321,23 @@ function parseJSON(text) {
   try { return JSON.parse(text); } catch (e) { return null; }
 }
 
-/* ---------------- 捕获登录态（http-response 触发） ---------------- */
+/* ---------------- 捕获登录态（http-response 触发，按 userId 去重存数组） ---------------- */
+
+// 插件参数“获取Token开关”：默认开；关了就不抓（两个号抓完后可关掉）
+function captureEnabled() {
+  var args = parseArgs(typeof $argument === 'string' ? $argument : '');
+  var v = String(args.capture || '').toLowerCase();
+  if (!v) return true;
+  return v === '1' || v === 'true' || v === 'on';
+}
 
 function captureAuth() {
   try {
+    if (!captureEnabled()) {
+      log('获取Token开关已关，跳过捕获');
+      $done({});
+      return;
+    }
     var token = headerValue($request.headers, 'authorization');
     var xVisitor = headerValue($request.headers, 'x-visitor');
     if (!token || token.indexOf('Bearer ') !== 0 || !xVisitor) {
@@ -249,20 +346,33 @@ function captureAuth() {
       return;
     }
     var userId = '';
+    var userName = '';
     var m = String($request.url || '').match(/userId=(\d+)/);
     if (m) userId = m[1];
-    if (!userId && $response && $response.body) {
+    if ($response && $response.body) {
       var body = parseJSON($response.body);
-      if (body && body.Data && body.Data.id) userId = String(body.Data.id);
+      if (body && body.Data) {
+        if (body.Data.id) userId = String(body.Data.id);
+        if (body.Data.mobile) userName = String(body.Data.mobile);
+      }
     }
-    var old = readJSON(STORE_AUTH) || {};
-    var fresh = { userId: userId || old.userId || '', token: token, xVisitor: xVisitor, updatedAt: new Date().toISOString() };
-    if (old.token === fresh.token && old.xVisitor === fresh.xVisitor && old.userId === fresh.userId) {
+    if (!userId) {
+      log('捕获跳过：拿不到 userId');
+      $done({});
+      return;
+    }
+    var list = readAuthArray();
+    var before = list.length;
+    var old = null;
+    list.forEach(function (a) { if (String(a.userId) === userId) old = a; });
+    var fresh = { userId: userId, token: token, xVisitor: xVisitor, userName: userName || (old && old.userName) || '', updatedAt: new Date().toISOString() };
+    upsertAccount(list, fresh);
+    if (old && old.token === fresh.token && old.xVisitor === fresh.xVisitor) {
       log('登录态无变化，不重复通知');
     } else {
-      writeJSON(STORE_AUTH, fresh);
-      notify('IQOO兑换', '登录态已保存', '用户 ' + (fresh.userId || '?') + '，定时兑换可以直接用了。');
-      log('登录态已保存，用户 ' + fresh.userId);
+      writeJSON(STORE_AUTH, list);
+      notify('IQOO兑换', '登录态已保存', '账号[' + (fresh.userName || fresh.userId) + '] 已保存，当前共 ' + list.length + ' 个账号（签到和兑换共用）。');
+      log('登录态已保存，用户 ' + userId + '，共 ' + list.length + ' 个账号（之前 ' + before + ' 个）');
     }
   } catch (e) {
     log('捕获出错：' + (e && e.message ? e.message : e));
@@ -274,40 +384,39 @@ function captureAuth() {
 
 function loadConfig() {
   var args = parseArgs(typeof $argument === 'string' ? $argument : '');
-  var stored = readJSON(STORE_AUTH) || {};
-  cfg.userId = args.userId || stored.userId || '';
-  // 插件参数优先；占位符算没填，用抓到的登录态
-  cfg.token = !isPlaceholder(args.token) ? args.token : (stored.token || '');
-  cfg.xVisitor = !isPlaceholder(args.xVisitor) ? args.xVisitor : (stored.xVisitor || '');
+  cfg.accounts = loadAccounts(args);
   cfg.giftId = parseInt(args.giftId || '0', 10) || 0;
   cfg.addressId = parseInt(args.addressId || '0', 10) || 0;
   cfg.retry = Math.max(1, Math.min(10, parseInt(args.retry || '5', 10) || 5));
   cfg.interval = Math.max(300, Math.min(10000, parseInt(args.interval || '1200', 10) || 1200));
-  cfg.backup = args.backup === '1' || args.backup === 'true';
 }
 
 async function listMode() {
-  var userResp = await apiGet('/v3/user', { userId: cfg.userId });
-  var user = parseJSON(userResp.data);
-  var score = (user && user.Data && typeof user.Data.score === 'number') ? user.Data.score : '?';
-  log('当前酷币：' + score);
-
-  var resp = await apiGet('/v3/goods.list', { 'filter[goodsType]': 1, 'filter[saleStatus]': 2, page: 1, perPage: 100, scope: 0 });
-  var json = parseJSON(resp.data);
+  var lines = [];
+  var goodsResp = null;
+  for (var i = 0; i < cfg.accounts.length; i++) {
+    setAccount(cfg.accounts[i]);
+    var userResp = await apiGet('/v3/user', { userId: cfg.userId });
+    var user = parseJSON(userResp.data);
+    var score = (user && user.Data && typeof user.Data.score === 'number') ? user.Data.score : '?';
+    lines.push('[' + acctLabel(cfg.accounts[i]) + '] 酷币 ' + score);
+    if (!goodsResp) goodsResp = await apiGet('/v3/goods.list', { 'filter[goodsType]': 1, 'filter[saleStatus]': 2, page: 1, perPage: 100, scope: 0 });
+    log('[' + acctLabel(cfg.accounts[i]) + '] 当前酷币：' + score);
+  }
+  var json = parseJSON(goodsResp.data);
   if (!json || json.Code !== 0 || !json.Data || !json.Data.list) {
-    var msg = (json && json.Message) ? json.Message : ('HTTP ' + resp.status + '，返回 ' + String(resp.data || '').slice(0, 120));
-    notify('IQOO兑换', '查商品失败', msg);
+    var msg = (json && json.Message) ? json.Message : ('HTTP ' + goodsResp.status + '，返回 ' + String(goodsResp.data || '').slice(0, 120));
+    notify('IQOO兑换', '查商品失败', lines.join('\n') + '\n' + msg);
     return;
   }
   var list = json.Data.list;
   var inStock = list.filter(function (g) { return g.goods_stock > 0; });
-  var lines = [];
-  lines.push('酷币 ' + score + '，在售 ' + list.length + ' 件，有库存 ' + inStock.length + ' 件');
+  lines.push('在售 ' + list.length + ' 件，有库存 ' + inStock.length + ' 件');
   inStock.slice(0, 10).forEach(function (g) {
     lines.push(g.id + ' ' + g.goods_name + '｜' + g.goods_score + '币｜库存' + g.goods_stock + '｜' + (g.list_at || ''));
   });
   if (inStock.length === 0) lines.push('当前全部无库存，等下一批上架再看。');
-  lines.push('要抢哪件，把插件参数“商品ID”改成它的 id 即可。');
+  lines.push('要抢哪件，把插件参数“商品ID”改成它的 id 即可（两个号抢同一件）。');
   log(lines.join('\n'));
   notify('IQOO兑换', '商品列表（商品ID=0，未兑换）', lines.join('\n'));
 }
@@ -322,22 +431,22 @@ async function fetchDefaultAddressId() {
   return json.Data[0].id;
 }
 
-async function rushMode() {
-  var state = readJSON(STORE_STATE) || {};
-  if (state.lastSuccessGiftId === cfg.giftId) {
-    log('商品 ' + cfg.giftId + ' 已兑换成功过，跳过');
-    if (!cfg.backup) notify('IQOO兑换', '已兑换过，跳过', '商品 ' + cfg.giftId + ' 之前已兑换成功，不再重复跑。');
-    return;
+async function rushOne(acct, state) {
+  var label = '[' + acctLabel(acct) + ']';
+  setAccount(acct);
+  var uid = String(acct.userId);
+  if (state.success[uid] && state.success[uid].giftId === cfg.giftId) {
+    log(label + ' 商品 ' + cfg.giftId + ' 已兑换成功过，跳过');
+    return label + ' 已兑过，跳过';
   }
 
   var addressId = cfg.addressId;
   if (!addressId) {
     addressId = await fetchDefaultAddressId();
     if (!addressId) {
-      notify('IQOO兑换', '没有默认收货地址', '请先在 IQOO 社区里设一个默认收货地址，或在插件参数里填收货地址ID。');
-      return;
+      return label + ' 没有默认收货地址，请先在 IQOO 社区里设一个，或在插件参数里填收货地址ID。';
     }
-    log('自动取到默认地址 id：' + addressId);
+    log(label + ' 自动取到默认地址 id：' + addressId);
   }
 
   var lastMsg = '';
@@ -348,40 +457,51 @@ async function rushMode() {
     var json = parseJSON(resp.data);
     lastCode = json ? json.Code : ('HTTP ' + resp.status);
     lastMsg = json ? (json.Message || '') : String(resp.data || '').slice(0, 120);
-    log('第 ' + i + '/' + cfg.retry + ' 次兑换：Code=' + lastCode + '，' + lastMsg);
+    log(label + ' 第 ' + i + '/' + cfg.retry + ' 次兑换：Code=' + lastCode + '，' + lastMsg);
     if (json && json.Code === 0) {
-      writeJSON(STORE_STATE, { lastSuccessGiftId: cfg.giftId, lastSuccessAt: new Date().toISOString() });
+      state.success[uid] = { giftId: cfg.giftId, at: new Date().toISOString() };
+      writeJSON(STORE_STATE, state);
       var name = '商品 ' + cfg.giftId;
       var dResp = await apiGet('/v3/goods.detail', { goodsType: 1, id: cfg.giftId });
       var dJson = parseJSON(dResp.data);
       if (dJson && dJson.Data && dJson.Data.goods_name) name = dJson.Data.goods_name;
-      notify('IQOO兑换', '兑换成功', name + '（id ' + cfg.giftId + '），第 ' + i + ' 次命中。去 App 里看订单/收货地址。');
-      return;
+      return label + ' ✅ 兑换成功：' + name + '（第 ' + i + ' 次命中）。去 App 里看订单。';
     }
     // 这些情况重试也没用，直接停
     if (/已兑|重复|上限|资格|不足/.test(lastMsg)) {
       if (/已兑|重复|上限/.test(lastMsg)) {
-        writeJSON(STORE_STATE, { lastSuccessGiftId: cfg.giftId, lastSuccessAt: new Date().toISOString() });
+        state.success[uid] = { giftId: cfg.giftId, at: new Date().toISOString() };
+        writeJSON(STORE_STATE, state);
       }
-      notify('IQOO兑换', '兑换未成功', '商品 ' + cfg.giftId + '：' + lastMsg + '（Code ' + lastCode + '）');
-      return;
+      return label + ' 未成功：' + lastMsg + '（Code ' + lastCode + '）';
     }
     if (/登录|授权|过期|token|Token|401|403/.test(lastMsg) || lastCode === 401 || lastCode === 403) {
-      notify('IQOO兑换', '登录态过期', '兑换返回：' + lastMsg + '。打开一次 IQOO 社区 App 重新抓登录态，下次再跑。');
-      return;
+      return label + ' 登录态过期：' + lastMsg + '。打开一次 IQOO 社区 App 重新抓登录态，下次再跑。';
     }
     if (i < cfg.retry) await sleep(cfg.interval);
   }
-  notify('IQOO兑换', '兑换失败', '商品 ' + cfg.giftId + ' 试了 ' + cfg.retry + ' 次都没成，最后一次：' + lastMsg + '（Code ' + lastCode + '）。');
+  return label + ' 失败：试了 ' + cfg.retry + ' 次都没成，最后一次：' + lastMsg + '（Code ' + lastCode + '）。';
+}
+
+async function rushMode() {
+  var state = migrateState(readJSON(STORE_STATE), cfg.accounts);
+  var lines = [];
+  for (var i = 0; i < cfg.accounts.length; i++) {
+    lines.push(await rushOne(cfg.accounts[i], state));
+  }
+  writeJSON(STORE_STATE, state);
+  log(lines.join('\n'));
+  notify('IQOO兑换', '兑换结果（' + cfg.accounts.length + ' 个账号）', lines.join('\n'));
 }
 
 async function main() {
-  log('开始执行，版本 ' + VERSION + (cfg.backup ? '（补跑）' : ''));
+  log('开始执行，版本 ' + VERSION);
   loadConfig();
-  if (!cfg.userId || !cfg.token || !cfg.xVisitor) {
-    notify('IQOO兑换', '登录态缺失，无法兑换', '先打开一次 IQOO 社区 App（捕获脚本会自动保存登录态），或在插件参数里填登录Token 和 X-Visitor。');
+  if (!cfg.accounts.length) {
+    notify('IQOO兑换', '没有可用账号', '先打开一次 IQOO 社区 App（两个号各打开一次），登录态会自动存好，签到和兑换共用。');
     return;
   }
+  log('本次共 ' + cfg.accounts.length + ' 个账号：' + cfg.accounts.map(acctLabel).join('、'));
   if (!cfg.giftId) {
     await listMode();
     return;
