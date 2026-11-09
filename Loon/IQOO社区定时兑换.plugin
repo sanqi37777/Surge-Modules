@@ -1,4 +1,5 @@
 #!name=🐻 IQOO社区
+#!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/iqoo.jpg
 #!desc=IQOO社区酷币商城定时兑换：11:00 主跑 + 11:30 补跑；商品ID=0 时只列商品不兑换；打开一次 IQOO 社区自动抓登录态
 #!author=sanqi37777
 #!homepage=https://github.com/sanqi37777/Surge-Modules

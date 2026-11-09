@@ -1,4 +1,5 @@
 #!name=🐻 IQOO社区
+#!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/iqoo.jpg
 #!desc=IQOO社区酷币商城定时兑换：11:00 主跑 + 11:30 补跑；商品ID=0 时只列商品不兑换；打开一次 IQOO 社区自动抓登录态
 #!arguments=定时兑换:0 11 * * *,备用补跑:30 11 * * *,用户ID:5024949,登录Token:PASTE_TOKEN_HERE,X-Visitor:PASTE_XVISITOR_HERE,商品ID:2101010,收货地址ID:409740,重试次数:5,重试间隔毫秒:1200
 #!arguments-desc=定时兑换：Cron 表达式，默认每天 11:00。\n备用补跑：主跑没兑上时 11:30 再试一次，已兑上自动跳过。\n用户ID：抓包里的 userId，已按你的填好。\n登录Token：抓包里的 Authorization；留占位符也行，装好后打开一次 IQOO 社区会自动抓。\nX-Visitor：抓包里的 X-Visitor，同上。\n商品ID：要抢的商品 id，默认 2101010（11 月 9 日 11:00 那批的 33W 充电宝，已兑完）；填 0 只列商品不兑换，先看列表再填。\n收货地址ID：默认收货地址，抓包里是 409740；填 0 自动取默认地址。\n重试次数：兑换失败重试几次，默认 5。\n重试间隔毫秒：两次兑换之间隔多久，默认 1200。
