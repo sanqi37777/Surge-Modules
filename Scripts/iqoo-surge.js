@@ -1,6 +1,8 @@
 /*
  * IQOO社区任务 - Surge 适配启动器
- * 参数：thread=true/false, draw=true/false, browse_count=1-26
+ * 参数：thread=true/false, draw=true/false, browse_count=1-26,
+ *       capture=true/false（获取Token开关，只管 http-response 捕获分支；
+ *       关了就不下载原始脚本、直接结束，定时任务不受影响；不填默认开）
  */
 const SOURCE_URL = "https://gist.githubusercontent.com/Sliverkiss/bfc5527ad3ea8ac7b0820ca442442452/raw/iqoo.js";
 
@@ -29,7 +31,18 @@ function parseArgs(raw) {
   return result;
 }
 
-$httpClient.get(
+// 获取Token开关：只在 http-response 捕获分支看；不填默认开
+function captureEnabled() {
+  const args = parseArgs(typeof $argument === "string" ? $argument : "");
+  const v = String(args.capture || "").toLowerCase();
+  if (!v) return true;
+  return v === "1" || v === "true" || v === "on";
+}
+
+if (typeof $request !== "undefined" && $request && $request.headers && !captureEnabled()) {
+  console.log("[IQOO Surge] 获取Token开关已关，跳过捕获");
+  $done({});
+} else $httpClient.get(
   { url: SOURCE_URL, timeout: 30000 },
   (error, response, body) => {
     if (error || !body || (response && response.status >= 400)) {
