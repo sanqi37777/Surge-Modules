@@ -1,0 +1,30 @@
+#!name=🐻 IQOO社区
+#!desc=IQOO社区酷币商城定时兑换：11:00 主跑 + 11:30 补跑；商品ID=0 时只列商品不兑换；打开一次 IQOO 社区自动抓登录态
+#!author=sanqi37777
+#!homepage=https://github.com/sanqi37777/Surge-Modules
+#!tag=兑换,任务
+#!date=2026-11-09
+
+[Argument]
+cron_expr = input, "0 11 * * *", type=string, tag=定时兑换, desc=Cron 表达式，默认每天 11:00 执行
+cron_backup = input, "30 11 * * *", type=string, tag=备用补跑, desc=主跑没兑上时 11:30 再试一次，已兑上自动跳过
+userId = input, "5024949", type=string, tag=用户ID, desc=抓包里的 userId，已按你的填好
+token = input, "PASTE_TOKEN_HERE", type=string, tag=登录Token, desc=抓包里的 Authorization；留占位符也行，装好后打开一次 IQOO 社区会自动抓
+xVisitor = input, "PASTE_XVISITOR_HERE", type=string, tag=X-Visitor, desc=抓包里的 X-Visitor，同上
+giftId = input, "2101010", type=number, tag=商品ID, desc=要抢的商品 id，默认 2101010（11 月 9 日 11:00 那批的 33W 充电宝，已兑完）；填 0 只列商品不兑换，先看列表再填
+addressId = input, "409740", type=number, tag=收货地址ID, desc=默认收货地址，抓包里是 409740；填 0 自动取默认地址
+retry = input, 5, type=number, tag=重试次数, desc=兑换失败重试几次，默认 5，范围 1-10
+interval = input, 1200, type=number, tag=重试间隔毫秒, desc=两次兑换之间隔多久，默认 1200，范围 300-10000
+
+[Script]
+# 捕获登录态（打开 IQOO 社区 App 时自动保存 Token，存上/变了才通知一次）
+http-response ^https:\/\/bbs-api\.iqoo\.com\/api\/v3\/user\?userId= script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/IQOO_Exchange.js, requires-body=true, timeout=30, tag=IQOO兑换Token捕获, script-update-interval=3600
+
+# 定时兑换（主跑）
+cron "{cron_expr}" script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/IQOO_Exchange.js, timeout=120, tag=IQOO定时兑换, argument="userId={userId}&token={token}&xVisitor={xVisitor}&giftId={giftId}&addressId={addressId}&retry={retry}&interval={interval}", script-update-interval=3600
+
+# 定时兑换（补跑）
+cron "{cron_backup}" script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/IQOO_Exchange.js, timeout=120, tag=IQOO兑换补跑, argument="userId={userId}&token={token}&xVisitor={xVisitor}&giftId={giftId}&addressId={addressId}&retry={retry}&interval={interval}&backup=1", script-update-interval=3600
+
+[MITM]
+hostname = bbs-api.iqoo.com
