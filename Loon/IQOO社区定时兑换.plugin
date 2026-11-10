@@ -3,8 +3,10 @@
 #!desc=IQOO社区酷币商城定时兑换：每天 11:00 一班，两个号一次跑完，不用补跑；商品ID=0 只列商品不兑换；每个号打开一次 IQOO 社区就自动存好登录态，和签到插件共用一套；抓完两个号可以把获取Token开关关掉
 #!author=sanqi37777
 #!homepage=https://github.com/sanqi37777/Surge-Modules
+#!system = iOS
+#!loon_version = 3.5.1(983)
 #!tag=兑换,任务
-#!date=2026-11-09
+#!date=2026-11-10
 
 [Argument]
 cron_expr = input, "0 11 * * *", type=string, tag=定时兑换, desc=Cron 表达式，默认每天 11:00 执行
@@ -17,10 +19,11 @@ interval = input, 1200, type=number, tag=重试间隔毫秒, desc=两次兑换�
 
 [Script]
 # 捕获登录态（打开 IQOO 社区 App 时自动保存 Token，按账号存，两个号各打开一次就都存好了）
-http-response ^https:\/\/bbs-api\.iqoo\.com\/api\/v3\/user\?userId= script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/IQOO_Exchange.js, requires-body=true, timeout=30, tag=IQOO兑换Token捕获, argument="capture={capture}", script-update-interval=3600
+# Loon 3.5.1+ 新写法：参数以对象形式传，$argument 是带类型的对象；旧的字符串拼接写法在新版下开关/数字传不过去
+response if ${url} ~= /^https:\/\/bbs-api\.iqoo\.com\/api\/v3\/user\?userId=/i then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/IQOO_Exchange.js", {${capture}}) with requires_body=true, tag="IQOO兑换Token捕获", timeout=30
 
 # 定时兑换（每天 11:00 一班，两个号一次跑完）
-cron "{cron_expr}" script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/IQOO_Exchange.js, timeout=120, tag=IQOO定时兑换, argument="giftId={giftId}&acc={acc}&addressId={addressId}&retry={retry}&interval={interval}", script-update-interval=3600
+cron ${cron_expr} then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/IQOO_Exchange.js", {${giftId}, ${acc}, ${addressId}, ${retry}, ${interval}}) with tag="IQOO定时兑换", timeout=120
 
-[MITM]
+[Mitm]
 hostname = bbs-api.iqoo.com

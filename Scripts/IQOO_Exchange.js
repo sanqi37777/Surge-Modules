@@ -6,10 +6,13 @@
  * goods.list perPage 从 100 改成 1000，取消只印前 10 件的截断，全部商品
  * 都印，库存 0 的也印（带开始时间 list_at），方便提前拿到未开售商品的
  * id（例如 2026-11-11 11:00 开兑的 iQOO TWS 1i 耳机）。通知里同样全印，
- * 切换账号（v2026-11-10.2，按原作者 IQOO_Acc 的做法加，三七 2026-11-10 20:25
- * 追加要求）：插件参数“兑换账号”，-1 = 两个号都跑（默认，明天 11 点两副
- * 都抢，不用改）；0 = 只跑第一个号；1 = 只跑第二个号。序号超出已存账号
- * 数时直接报错停跑，不会悄悄换号。
+ * 切换账号（v2026-11-10.2，按原作者 IQOO_Acc 的做法加）：插件参数“兑换账号”，
+ * -1 = 两个号都跑（默认，明天 11 点两副都抢）；0 = 只跑第一个号；1 = 只跑
+ * 第二个号。序号超出已存账号数时直接报错停跑，不会悄悄换号。
+ * 参数兼容（v2026-11-10.3，三七 2026-11-10 20:54 让再查一遍脚本）：
+ * Loon 3.5.1+ 插件对象形式（$argument 是对象）与 Surge 字符串形式都认，
+ * 之前只认字符串，Loon 新版下对象参数会全丢、giftId 回落到 0 只列清单
+ * 不兑换。启动时在日志里印一行收到的参数，方便一眼定位。
  *
  * 抓包核对过的事实（HAR 里 138 条请求）：
  * - 兑换就是 POST https://bbs-api.iqoo.com/api/v3/exchange
@@ -51,7 +54,7 @@
  * 不要改这个脚本。账号不用填，全靠第 1 步抓登录态。
  */
 
-var VERSION = '2026-11-10.2';
+var VERSION = '2026-11-10.3';
 var API = 'https://bbs-api.iqoo.com/api';
 var SIGN_KEY = '2618194b0ebb620055e19cf9811d3c13'; // 原作者脚本里的签名密钥
 var APPID = '1002';
@@ -194,6 +197,25 @@ function parseArgs(raw) {
   return out;
 }
 
+// 参数读取：Loon 3.5.1+ 插件对象形式（$argument 是对象，布尔/数字带类型）
+// 与 Surge 字符串形式（"giftId=2101025&acc=-1&..."）都兼容。
+// 之前只认字符串，Loon 新版下对象形式的参数会全部丢掉、giftId 回落到 0
+// 只列清单不兑换——明天 11 点最怕的就是这个，所以必须两边都认。
+function readArgs() {
+  var a = (typeof $argument !== 'undefined') ? $argument : null;
+  if (a && typeof a === 'object') return a;
+  return parseArgs(typeof a === 'string' ? a : '');
+}
+
+function toBool(v, def) {
+  if (v === true || v === 1) return true;
+  if (v === false || v === 0) return false;
+  var s = String(v == null ? '' : v).toLowerCase().trim();
+  if (s === 'true' || s === '1' || s === 'on' || s === 'yes') return true;
+  if (s === 'false' || s === '0' || s === 'off' || s === 'no') return false;
+  return !!def;
+}
+
 function isPlaceholder(v) {
   return !v || v === 'PASTE_TOKEN_HERE' || v === 'PASTE_XVISITOR_HERE' || v.indexOf('请填') === 0;
 }
@@ -334,10 +356,9 @@ function parseJSON(text) {
 
 // 插件参数“获取Token开关”：默认开；关了就不抓（两个号抓完后可关掉）
 function captureEnabled() {
-  var args = parseArgs(typeof $argument === 'string' ? $argument : '');
-  var v = String(args.capture || '').toLowerCase();
-  if (!v) return true;
-  return v === '1' || v === 'true' || v === 'on';
+  var args = readArgs();
+  if (args.capture === undefined || args.capture === null || String(args.capture) === '') return true;
+  return toBool(args.capture, true);
 }
 
 function captureAuth() {
@@ -392,13 +413,13 @@ function captureAuth() {
 /* ---------------- 定时任务 ---------------- */
 
 function loadConfig() {
-  var args = parseArgs(typeof $argument === 'string' ? $argument : '');
+  var args = readArgs();
   cfg.accounts = loadAccounts(args);
   cfg.totalAccounts = cfg.accounts.length;
-  cfg.giftId = parseInt(args.giftId || '0', 10) || 0;
-  cfg.addressId = parseInt(args.addressId || '0', 10) || 0;
-  cfg.retry = Math.max(1, Math.min(10, parseInt(args.retry || '5', 10) || 5));
-  cfg.interval = Math.max(300, Math.min(10000, parseInt(args.interval || '1200', 10) || 1200));
+  cfg.giftId = parseInt(args.giftId === undefined || args.giftId === null || String(args.giftId) === '' ? '0' : args.giftId, 10) || 0;
+  cfg.addressId = parseInt(args.addressId === undefined || args.addressId === null || String(args.addressId) === '' ? '0' : args.addressId, 10) || 0;
+  cfg.retry = Math.max(1, Math.min(10, parseInt(args.retry === undefined || args.retry === null || String(args.retry) === '' ? '5' : args.retry, 10) || 5));
+  cfg.interval = Math.max(300, Math.min(10000, parseInt(args.interval === undefined || args.interval === null || String(args.interval) === '' ? '1200' : args.interval, 10) || 1200));
   // 切换账号，按原作者 IQOO_Acc 的意思：0=第一个号，1=第二个号；
   // 留空 / -1 = 两个号都跑（默认）。序号超出范围时记下来，主流程里报错停跑。
   cfg.acc = -1;
@@ -526,6 +547,7 @@ async function rushMode() {
 async function main() {
   log('开始执行，版本 ' + VERSION);
   loadConfig();
+  log('参数：giftId=' + cfg.giftId + ' acc=' + cfg.acc + ' addressId=' + cfg.addressId + ' retry=' + cfg.retry + ' interval=' + cfg.interval + '（$argument 是 ' + (typeof $argument) + '）');
   if (cfg.accInvalid) {
     notify('IQOO兑换', '兑换账号序号超出范围', '你填的兑换账号是 ' + cfg.acc + '，当前只存了 ' + cfg.totalAccounts + ' 个账号。0=第一个号，1=第二个号，留空/-1=两个号都跑。');
     return;
