@@ -1,13 +1,13 @@
 #!name=🐻 IQOO社区
 #!icon = https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/iqoo.jpg
 #!desc=IQOO社区酷币商城定时兑换：每天 11:00 一班，两个号一次跑完，不用补跑；商品ID=0 只列商品不兑换；每个号打开一次 IQOO 社区就自动存好登录态，和签到插件共用一套；抓完两个号可以把获取Token开关关掉
-#!arguments=定时兑换:0 11 * * *,获取Token开关:true,商品ID:2101010,收货地址ID:0,重试次数:5,重试间隔毫秒:1200
-#!arguments-desc=定时兑换：Cron 表达式，默认每天 11:00。\n获取Token开关：默认 true，打开 IQOO 社区时自动抓登录态；两个号都抓完可以改成 false 关掉，换号或登录态过期时再打开。\n商品ID：要抢的商品 id，默认 2101010（11 月 9 日 11:00 那批的 33W 充电宝，已兑完）；填 0 只列商品不兑换，先看列表再填。\n收货地址ID：默认 0，自动取每个号自己的默认收货地址；想指定再填地址 id。\n重试次数：兑换失败重试几次，默认 5。\n重试间隔毫秒：两次兑换之间隔多久，默认 1200。
+#!arguments=定时兑换:0 11 * * *,获取Token开关:true,商品ID:2101010,兑换账号:-1,收货地址ID:0,重试次数:5,重试间隔毫秒:1200
+#!arguments-desc=定时兑换：Cron 表达式，默认每天 11:00。\n获取Token开关：默认 true，打开 IQOO 社区时自动抓登录态；两个号都抓完可以改成 false 关掉，换号或登录态过期时再打开。\n商品ID：要抢的商品 id，默认 2101010（11 月 9 日 11:00 那批的 33W 充电宝，已兑完）；填 0 只列商品不兑换，先看列表再填。\n兑换账号：默认 -1，两个号都跑；0=只跑第一个号，1=只跑第二个号，跟原作者 IQOO_Acc 一个意思。\n收货地址ID：默认 0，自动取每个号自己的默认收货地址；想指定再填地址 id。\n重试次数：兑换失败重试几次，默认 5。\n重试间隔毫秒：两次兑换之间隔多久，默认 1200。
 
 [Script]
 IQOO兑换Token捕获 = type=http-response, pattern=^https:\/\/bbs-api\.iqoo\.com\/api\/v3\/user\?userId=, requires-body=true, timeout=30, script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/IQOO_Exchange.js, script-update-interval=3600, argument="capture={{{获取Token开关}}}"
 
-IQOO定时兑换 = type=cron, cronexp="{{{定时兑换}}}", timeout=120, script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/IQOO_Exchange.js, script-update-interval=3600, argument="giftId={{{商品ID}}}&addressId={{{收货地址ID}}}&retry={{{重试次数}}}&interval={{{重试间隔毫秒}}}"
+IQOO定时兑换 = type=cron, cronexp="{{{定时兑换}}}", timeout=120, script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/IQOO_Exchange.js, script-update-interval=3600, argument="giftId={{{商品ID}}}&acc={{{兑换账号}}}&addressId={{{收货地址ID}}}&retry={{{重试次数}}}&interval={{{重试间隔毫秒}}}"
 
 [MITM]
 hostname = %APPEND% bbs-api.iqoo.com

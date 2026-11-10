@@ -1,6 +1,15 @@
 /*
- * IQOO社区定时兑换 v2026-11-09.2
+ * IQOO社区定时兑换 v2026-11-10.1
  * 综合：三七 2026-11-09 11:00 抓包（HAR）+ 原作者 xzxxn777 的 IQOO_Exchange.js
+ *
+ * 列表模式（v2026-11-10.1，按原作者做法改，三七 2026-11-10 20:24 亲口让改）：
+ * goods.list perPage 从 100 改成 1000，取消只印前 10 件的截断，全部商品
+ * 都印，库存 0 的也印（带开始时间 list_at），方便提前拿到未开售商品的
+ * id（例如 2026-11-11 11:00 开兑的 iQOO TWS 1i 耳机）。通知里同样全印，
+ * 切换账号（v2026-11-10.2，按原作者 IQOO_Acc 的做法加，三七 2026-11-10 20:25
+ * 追加要求）：插件参数“兑换账号”，-1 = 两个号都跑（默认，明天 11 点两副
+ * 都抢，不用改）；0 = 只跑第一个号；1 = 只跑第二个号。序号超出已存账号
+ * 数时直接报错停跑，不会悄悄换号。
  *
  * 抓包核对过的事实（HAR 里 138 条请求）：
  * - 兑换就是 POST https://bbs-api.iqoo.com/api/v3/exchange
@@ -42,7 +51,7 @@
  * 不要改这个脚本。账号不用填，全靠第 1 步抓登录态。
  */
 
-var VERSION = '2026-11-09.2';
+var VERSION = '2026-11-10.2';
 var API = 'https://bbs-api.iqoo.com/api';
 var SIGN_KEY = '2618194b0ebb620055e19cf9811d3c13'; // 原作者脚本里的签名密钥
 var APPID = '1002';
@@ -53,7 +62,7 @@ var STORE_STATE = 'iqoo_exchange_state'; // {success: {userId: {giftId, at}}}
 var UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_3_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.80(0x18005030) NetType/WIFI Language/zh_CN';
 var REFERER = 'https://servicewechat.com/wxcf4266fbc9463132/262/page-frame.html';
 
-var cfg = { accounts: [], giftId: 0, addressId: 0, retry: 5, interval: 1200, userId: '', token: '', xVisitor: '', userName: '' };
+var cfg = { accounts: [], giftId: 0, addressId: 0, retry: 5, interval: 1200, acc: -1, totalAccounts: 0, accInvalid: false, userId: '', token: '', xVisitor: '', userName: '' };
 
 /* ---------------- SHA-256 / HMAC-SHA256 / Base64（纯 JS，不依赖 CryptoJS） ---------------- */
 
@@ -385,10 +394,27 @@ function captureAuth() {
 function loadConfig() {
   var args = parseArgs(typeof $argument === 'string' ? $argument : '');
   cfg.accounts = loadAccounts(args);
+  cfg.totalAccounts = cfg.accounts.length;
   cfg.giftId = parseInt(args.giftId || '0', 10) || 0;
   cfg.addressId = parseInt(args.addressId || '0', 10) || 0;
   cfg.retry = Math.max(1, Math.min(10, parseInt(args.retry || '5', 10) || 5));
   cfg.interval = Math.max(300, Math.min(10000, parseInt(args.interval || '1200', 10) || 1200));
+  // 切换账号，按原作者 IQOO_Acc 的意思：0=第一个号，1=第二个号；
+  // 留空 / -1 = 两个号都跑（默认）。序号超出范围时记下来，主流程里报错停跑。
+  cfg.acc = -1;
+  cfg.accInvalid = false;
+  if (args.acc !== undefined && args.acc !== null && String(args.acc) !== '') {
+    var a = parseInt(args.acc, 10);
+    if (!isNaN(a)) cfg.acc = a;
+  }
+  if (cfg.acc >= 0) {
+    if (cfg.acc < cfg.accounts.length) {
+      cfg.accounts = [cfg.accounts[cfg.acc]];
+    } else {
+      cfg.accInvalid = true;
+      cfg.accounts = [];
+    }
+  }
 }
 
 async function listMode() {
@@ -400,7 +426,7 @@ async function listMode() {
     var user = parseJSON(userResp.data);
     var score = (user && user.Data && typeof user.Data.score === 'number') ? user.Data.score : '?';
     lines.push('[' + acctLabel(cfg.accounts[i]) + '] 酷币 ' + score);
-    if (!goodsResp) goodsResp = await apiGet('/v3/goods.list', { 'filter[goodsType]': 1, 'filter[saleStatus]': 2, page: 1, perPage: 100, scope: 0 });
+    if (!goodsResp) goodsResp = await apiGet('/v3/goods.list', { 'filter[goodsType]': 1, 'filter[saleStatus]': 2, page: 1, perPage: 1000, scope: 0 });
     log('[' + acctLabel(cfg.accounts[i]) + '] 当前酷币：' + score);
   }
   var json = parseJSON(goodsResp.data);
@@ -412,8 +438,11 @@ async function listMode() {
   var list = json.Data.list;
   var inStock = list.filter(function (g) { return g.goods_stock > 0; });
   lines.push('在售 ' + list.length + ' 件，有库存 ' + inStock.length + ' 件');
-  inStock.slice(0, 10).forEach(function (g) {
+  // 按原作者做法：全部印出来，不截断。库存 0 的也印（带开始时间），
+  // 方便提前看到还没开售的商品 id；通知被截断时去 Loon 日志看完整版。
+  list.forEach(function (g) {
     lines.push(g.id + ' ' + g.goods_name + '｜' + g.goods_score + '币｜库存' + g.goods_stock + '｜' + (g.list_at || ''));
+    log('商品：' + g.goods_name + ' id：' + g.id + ' 库存：' + g.goods_stock + ' 需要酷币：' + g.goods_score + ' 开始时间：' + (g.list_at || ''));
   });
   if (inStock.length === 0) lines.push('当前全部无库存，等下一批上架再看。');
   lines.push('要抢哪件，把插件参数“商品ID”改成它的 id 即可（两个号抢同一件）。');
@@ -497,11 +526,15 @@ async function rushMode() {
 async function main() {
   log('开始执行，版本 ' + VERSION);
   loadConfig();
+  if (cfg.accInvalid) {
+    notify('IQOO兑换', '兑换账号序号超出范围', '你填的兑换账号是 ' + cfg.acc + '，当前只存了 ' + cfg.totalAccounts + ' 个账号。0=第一个号，1=第二个号，留空/-1=两个号都跑。');
+    return;
+  }
   if (!cfg.accounts.length) {
     notify('IQOO兑换', '没有可用账号', '先打开一次 IQOO 社区 App（两个号各打开一次），登录态会自动存好，签到和兑换共用。');
     return;
   }
-  log('本次共 ' + cfg.accounts.length + ' 个账号：' + cfg.accounts.map(acctLabel).join('、'));
+  log('本次共 ' + cfg.accounts.length + ' 个账号：' + cfg.accounts.map(acctLabel).join('、') + (cfg.acc >= 0 ? '（只跑第 ' + cfg.acc + ' 个号）' : '（两个号都跑）'));
   if (!cfg.giftId) {
     await listMode();
     return;

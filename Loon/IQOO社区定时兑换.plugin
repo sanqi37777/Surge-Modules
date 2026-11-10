@@ -10,6 +10,7 @@
 cron_expr = input, "0 11 * * *", type=string, tag=定时兑换, desc=Cron 表达式，默认每天 11:00 执行
 capture = switch,true,type=boolean,tag=获取Token开关,desc=true 开启，打开 IQOO 社区时自动抓登录态；抓完两个号可以关掉，换号或登录态过期时再开。
 giftId = input, "2101010", type=number, tag=商品ID, desc=要抢的商品 id，默认 2101010（11 月 9 日 11:00 那批的 33W 充电宝，已兑完）；填 0 只列商品不兑换，先看列表再填
+acc = input, -1, type=number, tag=兑换账号, desc=-1=两个号都跑（默认，明天 11 点两副都抢）；0=只跑第一个号；1=只跑第二个号，跟原作者 IQOO_Acc 一个意思
 addressId = input, "0", type=number, tag=收货地址ID, desc=默认 0：自动取每个号自己的默认收货地址；想指定再填地址 id
 retry = input, 5, type=number, tag=重试次数, desc=兑换失败重试几次，默认 5，范围 1-10
 interval = input, 1200, type=number, tag=重试间隔毫秒, desc=两次兑换之间隔多久，默认 1200，范围 300-10000
@@ -19,7 +20,7 @@ interval = input, 1200, type=number, tag=重试间隔毫秒, desc=两次兑换�
 http-response ^https:\/\/bbs-api\.iqoo\.com\/api\/v3\/user\?userId= script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/IQOO_Exchange.js, requires-body=true, timeout=30, tag=IQOO兑换Token捕获, argument="capture={capture}", script-update-interval=3600
 
 # 定时兑换（每天 11:00 一班，两个号一次跑完）
-cron "{cron_expr}" script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/IQOO_Exchange.js, timeout=120, tag=IQOO定时兑换, argument="giftId={giftId}&addressId={addressId}&retry={retry}&interval={interval}", script-update-interval=3600
+cron "{cron_expr}" script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/IQOO_Exchange.js, timeout=120, tag=IQOO定时兑换, argument="giftId={giftId}&acc={acc}&addressId={addressId}&retry={retry}&interval={interval}", script-update-interval=3600
 
 [MITM]
 hostname = bbs-api.iqoo.com
