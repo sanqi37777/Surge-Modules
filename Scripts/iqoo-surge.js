@@ -33,12 +33,42 @@ function parseArgs(raw) {
   return result;
 }
 
+// 参数读取：Loon 3.5.1+ 插件对象形式（$argument 是对象，布尔/数字带类型）
+// 与 Surge 字符串形式（"thread=true&draw=false..."）都兼容；
+// 开关值宽松判断：true/1/on 都算开，避免字符串比对不上
+function toBool(v, def) {
+  if (v === true || v === 1) return true;
+  if (v === false || v === 0) return false;
+  const s = String(v == null ? "" : v).toLowerCase().trim();
+  if (s === "true" || s === "1" || s === "on" || s === "yes") return true;
+  if (s === "false" || s === "0" || s === "off" || s === "no") return false;
+  return !!def;
+}
+
+function readArgs() {
+  const a = (typeof $argument !== "undefined") ? $argument : null;
+  if (a && typeof a === "object") {
+    return {
+      thread: toBool(a.thread, false),
+      draw: toBool(a.draw, false),
+      comment: toBool(a.comment, true),
+      capture: toBool(a.capture, true),
+      browse_count: Math.max(1, Math.min(26, parseInt(a.browse_count, 10) || 15))
+    };
+  }
+  const args = parseArgs(typeof a === "string" ? a : "");
+  return {
+    thread: toBool(args.thread, false),
+    draw: toBool(args.draw, false),
+    comment: toBool(args.comment, true),
+    capture: toBool(args.capture, true),
+    browse_count: Math.max(1, Math.min(26, parseInt(args.browse_count || "15", 10) || 15))
+  };
+}
+
 // 获取Token开关：只在 http-response 捕获分支看；不填默认开
 function captureEnabled() {
-  const args = parseArgs(typeof $argument === "string" ? $argument : "");
-  const v = String(args.capture || "").toLowerCase();
-  if (!v) return true;
-  return v === "1" || v === "true" || v === "on";
+  return readArgs().capture;
 }
 
 if (typeof $request !== "undefined" && $request && $request.headers && !captureEnabled()) {
@@ -52,16 +82,12 @@ if (typeof $request !== "undefined" && $request && $request.headers && !captureE
       return;
     }
 
-    const args = parseArgs(
-      typeof $argument === "string" ? $argument : ""
-    );
-    const thread = args.thread === "true" ? "true" : "false";
-    const draw = args.draw === "true" ? "true" : "false";
-    const comment = args.comment === "false" ? "false" : "true";
-    const count = Math.max(
-      1,
-      Math.min(26, parseInt(args.browse_count || "15", 10) || 15)
-    );
+    const opts = readArgs();
+    const thread = opts.thread ? "true" : "false";
+    const draw = opts.draw ? "true" : "false";
+    const comment = opts.comment ? "true" : "false";
+    const count = opts.browse_count;
+    console.log(`[IQOO Surge] 参数：发帖=${thread} 抽奖=${draw} 评论=${comment} 浏览=${count}（$argument 是 ${typeof $argument}）`);
 
     let code = body;
     // 锚点用正则写：只认代码本身，不认空行和缩进——原作者排版一变
