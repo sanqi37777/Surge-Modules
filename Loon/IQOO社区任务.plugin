@@ -5,7 +5,7 @@
 #!homepage = https://github.com/sanqi37777/Surge-Modules
 #!system = iOS
 #!loon_version = 3.5.1(983)
-#!date = 2026-11-09
+#!date = 2026-11-10
 #!tag = 签到,自动化
 #!type = normal
 
@@ -18,8 +18,8 @@ capture = switch,true,type=boolean,tag=获取Token开关,desc=true 开启，打�
 browse_count = input,15,type=number,tag=浏览文章数量,desc=1-26，默认 15。
 
 [Script]
-response if ${url} ~= /^https:\/\/bbs-api\.iqoo\.com\/api\/v3\/user\?userId=/i then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/iqoo-surge.js", "capture=${capture}") with requires_body=true, tag="IQOO获取Token", timeout=30
-cron ${sign_time} then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/iqoo-surge.js", "thread=${thread}&draw=${draw}&comment=${comment}&browse_count=${browse_count}") with tag="IQOO每日任务", timeout=360
+response if ${url} ~= /^https:\/\/bbs-api\.iqoo\.com\/api\/v3\/user\?userId=/i then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/iqoo-surge.js", {${capture}}) with requires_body=true, tag="IQOO获取Token", timeout=30
+cron ${sign_time} then script("https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/iqoo-surge.js", {${thread}, ${draw}, ${comment}, ${browse_count}}) with tag="IQOO每日任务", timeout=360
 
 [Mitm]
 hostname = bbs-api.iqoo.com
