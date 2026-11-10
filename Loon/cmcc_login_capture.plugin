@@ -1,0 +1,10 @@
+#!name=移动登录凭证抓取
+#!desc=抓取中国移动 App 的 autoLogin 登录信封，存入 BoxJS（cmcc_login），供 Scripting 移动小组件导入。小组件自带的 Loon 插件只存 china_mobile_cookie，不写 cmcc_login，用那个是抓不到的。
+#!author=阿紫
+#!icon=https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/ChinaMobile.png
+
+[Script]
+http-request ^https?:\/\/client\.app\.coc\.10086\.cn\/biz-orange\/[LD]N\/uam(onekey|randcode)login\/autoLogin script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/cmcc_login_capture.js, requires-body=true, tag=移动登录凭证抓取
+
+[MITM]
+hostname = client.app.coc.10086.cn
