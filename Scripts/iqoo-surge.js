@@ -64,36 +64,37 @@ if (typeof $request !== "undefined" && $request && $request.headers && !captureE
     );
 
     let code = body;
+    // 锚点用正则写：只认代码本身，不认空行和缩进——原作者排版一变
+    //（比如多加个空行）也不至于把整天的任务都拦下来。2026-11-10 06:20
+    // 那次就是点赞那两行中间的空行对不上，触发了下面的保护停了全天任务。
     const replacements = [
-      [
-        "$.is_thread = ($.isNode() ? process.env['iqoo_thread'] : $.getdata('iqoo_thread')) || 'false';",
-        `$.is_thread = "${thread}"; $.is_draw = "${draw}"; $.is_comment = "${comment}"; $.browse_count = ${count};`
-      ],
-      [
-        "let threadList = user.getRandomSubarray(threadIds, 15);",
-        "let threadList = user.getRandomSubarray(threadIds, $.browse_count || 15);"
-      ],
-      [
-        `await user.getDrawCount() == 0
-                    ? await user.luckDraw()
-                    : $.log(\`[\${user.userName || user.index}][INFO] 今日免费抽奖次数已用完\\n\`);`,
-        `if ($.is_draw === "true") {
+      {
+        re: /\$\.is_thread = \(\$\.isNode\(\) \? process\.env\['iqoo_thread'\] : \$\.getdata\('iqoo_thread'\)\) \|\| 'false';/,
+        after: `$.is_thread = "${thread}"; $.is_draw = "${draw}"; $.is_comment = "${comment}"; $.browse_count = ${count};`
+      },
+      {
+        re: /let threadList = user\.getRandomSubarray\(threadIds, 15\);/,
+        after: "let threadList = user.getRandomSubarray(threadIds, $.browse_count || 15);"
+      },
+      {
+        re: /[ \t]*await user\.getDrawCount\(\) == 0\s*\? await user\.luckDraw\(\)\s*: \$\.log\(`\[\$\{user\.userName \|\| user\.index\}\]\[INFO\] 今日免费抽奖次数已用完\\n`\);/,
+        after: `if ($.is_draw === "true") {
                     await user.getDrawCount() == 0
                         ? await user.luckDraw()
                         : $.log(\`[\${user.userName || user.index}][INFO] 今日免费抽奖次数已用完\\n\`);
                 } else {
                     $.log(\`[\${user.userName || user.index}][INFO] 抽奖已关闭，跳过任务\\n\`);
                 }`
-      ],
-      [
-        "const [title, content] = await this.getContent();",
-        `const content = await this.getContent();
+      },
+      {
+        re: /const \[title, content\] = await this\.getContent\(\);/,
+        after: `const content = await this.getContent();
             const title = (content || "每日分享").slice(0, 20);`
-      ],
-      [
+      },
+      {
         // 发表评论：原脚本没有评论功能，在这里补一个方法
-        "    // 随机选取子数组",
-        `    //发表评论任务（每天发一条“666”评论，完成每日“发表评论”任务）
+        re: /\/\/ 随机选取子数组/,
+        after: `    //发表评论任务（每天发一条“666”评论，完成每日“发表评论”任务）
     async doCommentTask(threadId) {
         try {
             const opts = {
@@ -112,11 +113,11 @@ if (typeof $request !== "undefined" && $request && $request.headers && !captureE
     }
 
     // 随机选取子数组`
-      ],
-      [
+      },
+      {
         // 每个号每天只评一次（第一个帖子），不要 15 个帖子都评
-        "                    await user.doLikeTask(1);\n\n                    await user.doLikeTask(0);",
-        `                    await user.doLikeTask(1);
+        re: /[ \t]*await user\.doLikeTask\(1\);\s*await user\.doLikeTask\(0\);/,
+        after: `                    await user.doLikeTask(1);
 
                     await user.doLikeTask(0);
 
@@ -124,15 +125,15 @@ if (typeof $request !== "undefined" && $request && $request.headers && !captureE
                         await user.doCommentTask(threadId);
                         user.commented = true;
                     }`
-      ]
+      }
     ];
 
-    for (const [before, after] of replacements) {
-      if (!code.includes(before)) {
+    for (const { re, after } of replacements) {
+      if (!re.test(code)) {
         finish("原始脚本与适配补丁不匹配，已停止执行。");
         return;
       }
-      code = code.replace(before, after);
+      code = code.replace(re, after);
     }
 
     try {
