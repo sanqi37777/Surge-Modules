@@ -32,7 +32,10 @@
 
 var STORE_KEY = "fengniao_pizza_headers_v1"; // 与探针相同，沿用其捕获结果
 var API_BASE = "https://httpizza.ele.me/xtop/xtop.knight.task.mng.growth.knightAppClock.";
-var SCRIPT_VERSION = "20251030-capturemode"; // 2026-10-30 加：模块参数 capture_mode（notify/silent/off），控制捕获通知
+var SCRIPT_VERSION = "20251119-capturenotify"; // 2026-11-19 修：捕获通知只看 Cookie/X-TOKEN 是否真变 + 1 小时节流，修连弹刷屏
+// 捕获通知节流：登录态真的变了，1 小时内也只通知一次，避免连续请求刷屏
+var NOTIFY_KEY = "fengniao_pizza_notify_ts_v1";
+var NOTIFY_INTERVAL_MS = 60 * 60 * 1000;
 var KEEP_HEADERS = [
   "Cookie", "X-TOKEN", "HTTP-ACCESS-TOKEN", "HTTP-REQUEST-AUTH",
   "HTTP-DEVICE-ID", "HTTP-DEVICE-TYPE", "HTTP-APP-TYPE", "HTTP-APP-VERSION",
@@ -78,10 +81,24 @@ function runCapture() {
     var oldVal = $persistentStore.read(STORE_KEY);
     $persistentStore.write(newVal, STORE_KEY);
     console.log("[蜂鸟签到] 登录态头已刷新");
-    // notify（默认）：只在登录态首次保存或发生变化时通知一次；
-    // silent：只保存不通知；off：上面已直接返回，不捕获
-    if (oldVal !== newVal && mode !== "silent") {
-      notify("获取登录态成功 ✅", "蜂鸟众包登录态已保存，09:00 自动签到将使用最新登录态。");
+    // 2026-11-19 修连弹：之前拿整份头比对“变化”，HTTP-REQUEST-AUTH 等签名头
+    // 每次请求都变，导致每次打开 App 都连弹多条。现只看登录身份（Cookie/X-TOKEN）
+    // 是否真的变了，且 1 小时内最多通知一次；silent 模式不通知。
+    if (mode !== "silent" && oldVal !== newVal) {
+      var identityChanged = false;
+      try {
+        var oldSaved = oldVal ? JSON.parse(oldVal) : null;
+        if (!oldSaved) identityChanged = true;
+        else if ((oldSaved["Cookie"] || "") !== (saved["Cookie"] || "")) identityChanged = true;
+        else if ((oldSaved["X-TOKEN"] || "") !== (saved["X-TOKEN"] || "")) identityChanged = true;
+      } catch (e) { identityChanged = true; }
+      if (identityChanged) {
+        var lastTs = parseInt($persistentStore.read(NOTIFY_KEY) || "0", 10) || 0;
+        if (Date.now() - lastTs > NOTIFY_INTERVAL_MS) {
+          $persistentStore.write(String(Date.now()), NOTIFY_KEY);
+          notify("获取登录态成功 ✅", "蜂鸟众包登录态已保存，09:00 自动签到将使用最新登录态。");
+        }
+      }
     }
   }
   $done({});
