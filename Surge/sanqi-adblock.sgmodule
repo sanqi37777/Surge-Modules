@@ -1,5 +1,5 @@
 #!name=三七去广告
-#!desc=三七常用去广告规则合集：通用广告域名 + 拼多多 + 微信小程序/微博/菜鸟/淘宝/高德/滴滴/彩云/优酷等 39 条；不含 perzikkop 脚本
+#!desc=三七常用去广告规则合集：通用广告域名 + 拼多多 + 微信小程序/微博/菜鸟/淘宝/高德/滴滴/彩云/优酷等 + 京东/哔哩哔哩/贴吧/抖音/闲鱼/夸克/下厨房；不含 perzikkop 脚本；优先推荐直接装奶思 blockAds.module
 #!author=阿紫
 #!icon=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/icon.png
 
@@ -50,3 +50,135 @@ IP-CIDR,39.97.128.148/32,REJECT,no-resolve
 IP-CIDR,39.97.130.51/32,REJECT,no-resolve
 URL-REGEX,^http:\/\/api\.weibo\.cn\/2\/httpdns\/config,REJECT,extended-matching
 URL-REGEX,^http:\/\/api\.weibo\.cn\/httpdns\/config,REJECT,extended-matching
+
+# ===== A. 上游 RULE-SET 引用(自动更新,无需手写) =====
+# blackmatrix7 Advertising.list 已在模块中,此处不再重复
+RULE-SET,https://raw.githubusercontent.com/Moli-X/Tool/main/Loon/Rules/Reject.list,REJECT
+
+# ===== B. 各 App 手写规则(摘自奶思 blockAds.module 2026-11-11 版 [Rule] 段快照,不会自动更新) =====
+# > 京东
+DOMAIN-SUFFIX,jzt.jd.com,REJECT
+DOMAIN-SUFFIX,img-x.jd.com,REJECT
+DOMAIN-SUFFIX,du.jd.com,REJECT
+DOMAIN-SUFFIX,c-nfa.jd.com,REJECT
+DOMAIN-SUFFIX,cm.jd.com,REJECT
+DOMAIN-SUFFIX,jddebug.com,REJECT
+DOMAIN-SUFFIX,policy.jd.com,REJECT
+DOMAIN-SUFFIX,kepler.jd.com,REJECT
+DOMAIN-SUFFIX,bdsp.x.jd.com,REJECT
+DOMAIN-SUFFIX,keplerapi.jd.com,REJECT
+DOMAIN-SUFFIX,mapi.m.jd.com,REJECT
+DOMAIN-SUFFIX,ad.3.cn,REJECT
+DOMAIN-SUFFIX,jd.c-ptsp.com.cn,REJECT
+DOMAIN,dns.jd.com,REJECT
+IP-CIDR,101.124.19.122/32,REJECT,no-resolve
+IP-CIDR6,2402:db40:5100:1011::5/128,REJECT,no-resolve
+
+# > 哔哩哔哩
+DOMAIN,api.biliapi.com,REJECT
+DOMAIN,app.biliapi.com,REJECT
+DOMAIN,api.biliapi.net,REJECT
+DOMAIN,app.biliapi.net,REJECT
+AND,((DOMAIN-SUFFIX,chat.bilibili.com),(OR,((DOMAIN-KEYWORD,stun),(DOMAIN-KEYWORD,tracker)))),REJECT
+
+# > 百度贴吧
+DOMAIN,180.76.76.200,REJECT
+IP-CIDR,180.76.76.200/32,REJECT,no-resolve
+
+# > 抖音
+DOMAIN-KEYWORD,bds.snssdk.com,REJECT
+DOMAIN-KEYWORD,p3.pstatp.com,REJECT
+
+# > 闲鱼
+AND,((URL-REGEX,"^http:\/\/.+\/amdc\/mobileDispatch"),(USER-AGENT,"%E9%97%B2%E9%B1%BC*")),REJECT
+
+# > UC浏览器
+DOMAIN,safe.ucweb.com,REJECT
+DOMAIN,px.ucweb.com,REJECT
+DOMAIN,navigis.uc.cn,REJECT
+DOMAIN,order.sm.cn,REJECT
+DOMAIN,ucdc-upaas.uc.cn,REJECT
+DOMAIN,access.open.uc.cn,REJECT
+DOMAIN,uc.ucweb.com,REJECT
+DOMAIN,emoji.uc.cn,REJECT
+DOMAIN,ssp-partner.alibaba.com,REJECT
+DOMAIN,voice-service.uc.cn,REJECT
+DOMAIN,v.uc.cn,REJECT
+DOMAIN,coral.uc.cn,REJECT
+DOMAIN,wolong-dsp.sm.cn,REJECT
+DOMAIN,cartoonapi.uc.cn,REJECT
+DOMAIN,umessage-online-zb.uc.cn,REJECT
+DOMAIN,api.c.uc.cn,REJECT
+DOMAIN,aid.m.taobao.com,REJECT
+DOMAIN,cms.uc.cn,REJECT
+DOMAIN,applog-perf.uc.cn,REJECT
+DOMAIN-SUFFIX,clickc.admaster.com.cn,REJECT
+DOMAIN-SUFFIX,fans.m.tmall.com,REJECT
+DOMAIN-SUFFIX,r1.ykimg.com,REJECT
+DOMAIN-SUFFIX,v.admaster.com.cn,REJECT
+DOMAIN-SUFFIX,v2.reachmax.cn,REJECT
+DOMAIN-SUFFIX,server.m.pp.cn,REJECT
+DOMAIN-SUFFIX,puds.ucweb.com,REJECT
+DOMAIN-SUFFIX,wgo.mmstat.com,REJECT
+DOMAIN-SUFFIX,log.cs.pp.cn,REJECT
+DOMAIN-SUFFIX,applog.uc.cn,REJECT
+DOMAIN-SUFFIX,afpapi.alimama.com,REJECT
+DOMAIN-SUFFIX,a.9game.cn,REJECT
+DOMAIN-SUFFIX,track.uc.cn,REJECT
+DOMAIN-SUFFIX,adtrack.ucweb.com,REJECT
+DOMAIN-SUFFIX,utp-dmp.ucweb.com,REJECT
+DOMAIN-SUFFIX,utp.ucweb.com,REJECT
+DOMAIN-SUFFIX,ynuf.alipay.com,REJECT
+DOMAIN-SUFFIX,pdds.ucweb.com,REJECT
+DOMAIN-SUFFIX,js.union-wifi.com,REJECT
+DOMAIN-SUFFIX,qmlog.cn,REJECT
+DOMAIN-SUFFIX,cpu.baidu.com,REJECT
+DOMAIN-SUFFIX,caclick.baidu.com,REJECT
+DOMAIN-SUFFIX,rescn.u3.ucweb.com,REJECT
+DOMAIN,feedback.uc.cn,REJECT
+DOMAIN,gj.applog.uc.cn,REJECT
+DOMAIN,gj.track.uc.cn,REJECT
+DOMAIN,gjapplog.uc.cn,REJECT
+DOMAIN,gjtrack.uc.cn,REJECT
+DOMAIN,holmeshelptest.uc.cn,REJECT
+DOMAIN-SUFFIX,ads.uc.cn,REJECT
+DOMAIN-SUFFIX,adslot.uc.cn,REJECT
+DOMAIN-SUFFIX,alissl.ucdl.pp.uc.cn,REJECT
+DOMAIN-SUFFIX,api.mp.uc.cn,REJECT
+DOMAIN-SUFFIX,api.open.uc.cn,REJECT
+DOMAIN-SUFFIX,applogios.uc.cn,REJECT
+DOMAIN-SUFFIX,bench.uc.cn,REJECT
+DOMAIN-SUFFIX,client.tv.uc.cn,REJECT
+DOMAIN-SUFFIX,coral-task.uc.cn,REJECT
+DOMAIN-SUFFIX,dispatcher.upmc.uc.cn,REJECT
+DOMAIN-SUFFIX,hcadv.video.ums.uc.cn,REJECT
+DOMAIN-SUFFIX,hao.uc.cn,REJECT
+DOMAIN-SUFFIX,lobmuc.cn,REJECT
+DOMAIN-SUFFIX,open-uc.cn,REJECT
+DOMAIN-SUFFIX,puds.test.uae.uc.cn,REJECT
+DOMAIN-SUFFIX,wmedia-track.uc.cn,REJECT
+DOMAIN-SUFFIX,woodpecker.uc.cn,REJECT
+DOMAIN,gecko-pangle-lf.snssdk.com,REJECT
+DOMAIN,mercury-sdk.snssdk.com,REJECT
+DOMAIN,tbm.snssdk.com,REJECT
+DOMAIN,toblog.ctobsnssdk.com,REJECT
+DOMAIN,tnc3-aliec2.snssdk.com,REJECT
+DOMAIN-SUFFIX,kwurl.ucweb.com,REJECT
+DOMAIN-SUFFIX,uc9.ucweb.com,REJECT
+DOMAIN-SUFFIX,ucus.ucweb.com,REJECT
+DOMAIN-SUFFIX,up4.ucweb.com,REJECT
+DOMAIN-SUFFIX,wap3.ucweb.com,REJECT
+DOMAIN-SUFFIX,adn.insight.ucweb.com,REJECT
+DOMAIN-SUFFIX,hk.napi.ucweb.com,REJECT
+DOMAIN-SUFFIX,sea.napi.ucweb.com,REJECT
+DOMAIN-SUFFIX,bjcu.u3.ucweb.com,REJECT
+DOMAIN-SUFFIX,vs8.gzct.u3.ucweb.com,REJECT
+DOMAIN-SUFFIX,vs19.gzcu.u3.ucweb.com,REJECT
+DOMAIN-SUFFIX,vs2.gzcu.u3.ucweb.com,REJECT
+DOMAIN-SUFFIX,vs7.gzcu.u3.ucweb.com,REJECT
+DOMAIN-SUFFIX,vs8.gzcu.u3.ucweb.com,REJECT
+DOMAIN-SUFFIX,slot.union.ucweb.com,REJECT
+
+# > 下厨房
+DOMAIN-SUFFIX,baidu-union-js.xiachufang.com,REJECT
+DOMAIN-SUFFIX,baidu-union-pos.xiachufang.com,REJECT
