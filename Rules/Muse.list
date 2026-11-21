@@ -1,0 +1,37 @@
+# NAME: Muse
+# AUTHOR: 阿紫 (for 三七)
+# REPO: https://github.com/sanqi37777/Surge-Modules
+# UPDATED: 2026-11-21
+# TOTAL: 17
+# NOTE: Muse (Meta) 专属分流规则，覆盖聊天、上传、账号、登录与 CDN。配合 Surge 配置里阿紫组使用。
+# 来源：配置里原有 9 条 Meta 规则 + 社区实测补充（muse.ai / ecto1.ai / OHTTP 中继 / Llama 相关）。
+# aapls Ai.list 与 bm7 Facebook.list 均不完整（前者是全 AI 大表、不能单独指阿紫；后者缺 metaaivm/meta.ai/muse.ai），故单独立表。
+
+# > Muse 核心（聊天 WebSocket 与账号 API）
+DOMAIN-SUFFIX,metaaivm.com
+DOMAIN-SUFFIX,meta.ai
+DOMAIN-SUFFIX,muse.ai
+DOMAIN-SUFFIX,museai.com
+DOMAIN-SUFFIX,ecto1.ai
+
+# > Meta 账号与登录（Facebook Graph API 等）
+DOMAIN-SUFFIX,facebook.com
+
+# > Meta CDN 与资源
+DOMAIN-SUFFIX,fbcdn.net
+DOMAIN-SUFFIX,fbcdn.com
+DOMAIN-SUFFIX,fbsbx.com
+DOMAIN-SUFFIX,facebook.net
+
+# > Meta 官网与短域名
+DOMAIN-SUFFIX,meta.com
+DOMAIN-SUFFIX,fb.com
+
+# > Meta OHTTP 中继（Muse 隐私中继）
+DOMAIN,meta-ohttp-config-prod.fastly-edge.com
+DOMAIN,meta-ohttp-relay-prod.fastly-edge.com
+
+# > Meta AI / Llama 相关
+DOMAIN-SUFFIX,atmeta.com
+DOMAIN-SUFFIX,llamameta.net
+DOMAIN-SUFFIX,llama.com
