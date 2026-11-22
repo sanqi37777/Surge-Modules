@@ -1,0 +1,28 @@
+# Muse 分流规则（阿紫）— QX 版
+# 来源：juner922/muse-loon-rules MuseAI.list（2026-09-29）转 QX 格式 + fbcdn.com
+# 用法：QX 里加为远程过滤规则，或粘贴进配置 [filter_local]；策略走「日本节点」组
+HOST-SUFFIX,muse.ai,日本节点
+HOST-SUFFIX,museai.com,日本节点
+HOST-SUFFIX,meta.ai,日本节点
+HOST-SUFFIX,meta.com,日本节点
+HOST-SUFFIX,atmeta.com,日本节点
+HOST-SUFFIX,metaaivm.com,日本节点
+HOST-SUFFIX,metaaiusercontent.com,日本节点
+HOST-SUFFIX,ecto1usercontent.com,日本节点
+HOST,hatch.ecto1.ai,日本节点
+HOST,node.hatch.one,日本节点
+HOST,meta.privacy-gateway.cloudflare.com,日本节点
+HOST,meta.hpke-keys.privacy-gateway.cloudflare.com,日本节点
+HOST,meta-ohttp-relay-prod.fastly-edge.com,日本节点
+HOST,meta-ohttp-config-prod.fastly-edge.com,日本节点
+HOST-SUFFIX,whatsapp.com,日本节点
+HOST-SUFFIX,whatsapp.net,日本节点
+HOST-SUFFIX,facebook.com,日本节点
+HOST-SUFFIX,facebook.net,日本节点
+HOST-SUFFIX,fbcdn.net,日本节点
+HOST-SUFFIX,fbsbx.com,日本节点
+HOST-SUFFIX,fbpigeon.com,日本节点
+HOST-SUFFIX,fb.com,日本节点
+HOST-SUFFIX,instagram.com,日本节点
+HOST-SUFFIX,cdninstagram.com,日本节点
+HOST-SUFFIX,fbcdn.com,日本节点
