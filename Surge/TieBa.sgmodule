@@ -1,0 +1,14 @@
+#!name=🐻 百度贴吧 [签到] (重写版)
+#!desc=百度贴吧每日自动签到领经验。重写自 NobyDa/Script 的 TieBa.js (2024/06/01), 修复原脚本并行挂起导致静默无通知的问题, 改串行+90 秒兜底通知, User-Agent 更新到 iOS 18.3.2。Cookie 由捕获脚本从贴吧 App 的 login 请求自动存 (只存手机本地, 键名 CookieTB)。
+#!author=sanqi37777 (重写) / sazs34, NobyDa (原脚本)
+#!homepage=https://github.com/sanqi37777/Surge-Modules
+#!icon=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/tieba.jpg
+
+#!arguments=sign_time:40 8 * * *,disable_script:百度贴吧[Cookie],disable_mitm:hostname
+
+[Script]
+百度贴吧[Cookie] = type=http-request,pattern=^https?:\/\/(c\.tieba|tiebac)\.baidu\.com\/c\/s\/login,requires-body=false,script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/tieba_signin.js,argument="{{{disable_script}}}"
+百度贴吧签到 = type=cron,cronexp="{{{sign_time}}}",wake-system=true,timeout=120,script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/tieba_signin.js
+
+[MITM]
+hostname = %APPEND% c.tieba.baidu.com, tiebac.baidu.com, tieba.baidu.com, {{{disable_mitm}}}
