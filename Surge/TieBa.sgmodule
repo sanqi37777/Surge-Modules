@@ -4,7 +4,7 @@
 #!homepage=https://github.com/sanqi37777/Surge-Modules
 #!icon=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Loon/icons/tieba.jpg
 
-#!arguments=sign_time:40 8 * * *,disable_script:百度贴吧[Cookie],disable_mitm:hostname
+#!arguments=sign_time:0 4 * * *,disable_script:百度贴吧[Cookie],disable_mitm:hostname
 
 [Script]
 百度贴吧[Cookie] = type=http-request,pattern=^https?:\/\/(c\.tieba|tiebac)\.baidu\.com\/c\/s\/login,requires-body=false,script-path=https://raw.githubusercontent.com/sanqi37777/Surge-Modules/main/Scripts/tieba_signin.js,argument="{{{disable_script}}}"
