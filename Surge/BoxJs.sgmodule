@@ -1,0 +1,13 @@
+#!name=BoxJs
+#!desc=BoxJs for Surge (converted from chavyleung QuanX rewrite)
+#!author=chavyleung
+#!icon=https://raw.githubusercontent.com/chavyleung/scripts/master/box/icon.png
+
+[General]
+force-http-engine-hosts = %APPEND% boxjs.com, boxjs.net
+
+[MITM]
+hostname = %APPEND% boxjs.com, boxjs.net, *.boxjs.com, *.boxjs.net
+
+[Script]
+Rewrite: BoxJs = type=http-request, pattern=^https?:\/\/(.+\.)?boxjs\.(com|net), script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/box/chavy.boxjs.js, requires-body=true, timeout=120
